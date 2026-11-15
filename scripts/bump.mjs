@@ -6,7 +6,7 @@ const files = ['index.html', 'app.js', 'engine.js'];
 for (const f of files) {
   const s = readFileSync(f, 'utf8')
     .replace(/((?:href|src)="(?:styles\.css|app\.js))(?:\?v=\w+)?"/g, `$1?v=${v}"`)
-    .replace(/(from '\.\/(?:i18n|catalog|engine)\.js)(?:\?v=\w+)?'/g, `$1?v=${v}'`);
+    .replace(/(from '\.\/(?:i18n|catalog|engine|config)\.js)(?:\?v=\w+)?'/g, `$1?v=${v}'`);
   writeFileSync(f, s);
 }
 console.log('version', v);

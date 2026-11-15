@@ -41,3 +41,19 @@ Commandes utiles :
     npm run sync          # copie l'app web dans www/ et met à jour android/ et ios/
     npx cap open android  # ouvre Android Studio
     npx cap open ios      # ouvre Xcode
+
+## Rendu IA (coupe + couleur) : Supabase + Nano Banana 2
+
+L'app envoie la photo et les choix à une fonction Supabase (`supabase/functions/render`), qui appelle
+Nano Banana 2 (Gemini 3.1 Flash Image). La clé Gemini reste dans les secrets Supabase, jamais dans l'app.
+
+1. Créer un projet sur supabase.com.
+2. Créer une clé dans Google AI Studio, puis dans Supabase › Edge Functions › Secrets : `GEMINI_API_KEY`
+   (facultatif : `DAILY_LIMIT`, 200 par défaut).
+3. Exécuter `supabase/migrations/20261115_render_usage.sql` dans Supabase › SQL Editor (plafond quotidien).
+4. Déployer la fonction : via l'action GitHub « Supabase function » (secrets `SUPABASE_ACCESS_TOKEN` et
+   `SUPABASE_PROJECT_REF`), ou `supabase functions deploy render`.
+5. Renseigner `config.js` : l'adresse `https://<projet>.supabase.co/functions/v1/render` et la clé publique `anon`.
+
+Sans configuration, l'app garde le rendu local (couleur) et l'aperçu de démonstration ; `?render=mock` dans
+l'adresse simule le service pour tester l'interface.

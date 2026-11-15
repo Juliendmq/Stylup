@@ -1,7 +1,8 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151340';
-import * as C from './catalog.js?v=202611151340';
-import * as E from './engine.js?v=202611151340';
+import { STR } from './i18n.js?v=202611151408';
+import * as C from './catalog.js?v=202611151408';
+import { RENDER } from './config.js?v=202611151408';
+import * as E from './engine.js?v=202611151408';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -211,13 +212,13 @@ const SCREENS = {
     return `<div class="screen">${top(t('colorTitle'))}<main class="main">${cards}${S.colors.length < 2 ? `<button class="link" data-a="addCard" data-kind="color">${t('addColor')}</button>` : ''}</main>${foot(pbtn(t('launch'), 'launch', S.colors.every(c => c.tone)))}</div>`;
   },
 
-  generating: () => `<div class="screen">${top(t('resultTitle'), { noBack: true })}<main class="main"><div class="gen"><h2>${t('generating')}</h2><p class="muted" id="secs">${t('secondsLeft', { n: 2 })}</p><div class="bar"><i></i></div></div></main>${foot(`<button class="btn ghost" data-a="cancelGen">${t('cancel')}</button>`, { noAbandon: true })}</div>`,
+  generating: () => `<div class="screen">${top(t('resultTitle'), { noBack: true })}<main class="main"><div class="gen"><h2>${t('generating')}</h2><p class="muted" id="secs">${renderMode() && S.svc.cut ? t('generatingAi') : t('secondsLeft', { n: 2 })}</p><div class="bar"><i></i></div></div></main>${foot(`<button class="btn ghost" data-a="cancelGen">${t('cancel')}</button>`, { noAbandon: true })}</div>`,
 
   result: () => {
     const R = S.renders; const cur = S.tab; const v = cur === 0 ? null : R[cur - 1];
     const tabs = [t('original'), ...R.map((r, i) => tabLabel(i))];
     const img = cur === 0 ? S.photoUrl : v.url;
-    const notes = v ? (v.cutPending ? `<div class="overlay-note"><strong>${t('cutPending')}</strong><span class="muted">${t('cutPendingSub')}${v.color ? ' ' + t('cutPendingColor') : ''}</span></div>` : v.demoUsed ? `<div class="overlay-note soft"><span class="muted">${t('demoExample')}</span></div>` : '') : '';
+    const notes = v ? (v.aiError ? `<div class="overlay-note"><strong>${t('renderError')}</strong><span class="muted">${t(v.aiError === 'daily_limit' ? 'renderLimit' : 'renderErrorSub')}${v.color ? ' ' + t('cutPendingColor') : ''}</span></div>` : v.cutPending ? `<div class="overlay-note"><strong>${t('cutPending')}</strong><span class="muted">${t('cutPendingSub')}${v.color ? ' ' + t('cutPendingColor') : ''}</span></div>` : v.mock ? `<div class="overlay-note soft"><span class="muted">${t('mockNote')}</span></div>` : v.demoUsed ? `<div class="overlay-note soft"><span class="muted">${t('demoExample')}</span></div>` : '') : '';
     const info = v ? infoOf(v) : { title: t('notSet'), sub: '-', dot: '' };
     return `<div class="screen">${top(t('resultTitle'))}<main class="main flush"><div class="photo" style="aspect-ratio:390/445">${`<img src="${img}" alt="">`}${v ? `<span class="badge">${t('simulation')}</span>` : ''}${notes}</div>
       <div class="rtabs" role="tablist">${tabs.map((l, i) => `<button role="tab" data-a="rtab" data-i="${i}" aria-selected="${i === cur}"><i></i>${esc(l)}</button>`).join('')}</div>
@@ -341,22 +342,52 @@ function infoOf(v) {
 function tabLabel(i) { const n = pad(i + 1); return S.svc.cut && S.svc.color ? t('render', { n }) : S.svc.cut ? t('cutN', { n }) : t('colorN', { n }); }
 function nextChoice() { return S.svc.cut ? 'cut' : 'color'; }
 
+// Rendu génératif (coupe, et couleur quand il y a aussi une coupe) via la fonction Supabase → Nano Banana 2
+const renderMode = () => /[?&]render=mock\b/.test(location.search) ? 'mock' : RENDER.url ? 'live' : null;
+let renderAbort = null;
+function renderPayload(cut, color) {
+  const en = o => C.label(o, 'en'), enDesc = o => C.describe(o, 'en');
+  const set = S.cutSet, fields = C.CUT_SETS[set];
+  const items = cut ? fields.filter(f => cut[f.key]).map(f => { const o = f.options.find(x => x.id === cut[f.key]); return { field: f.key, name: en(o), desc: enDesc(o) }; }) : [];
+  const col = color ? { tone: color.tone, toneName: en(C.TONES.find(x => x.id === color.tone)), reflet: color.reflet ?? 0, refletName: en(C.REFLETS.find(x => x.id === (color.reflet ?? 0))), code: C.colorCode(color.tone, color.reflet ?? 0), custom: color.custom ? color.name : null } : null;
+  return { cut: items.length ? { set, items } : null, color: col };
+}
+async function aiRender(cut, color, signal) {
+  const body = { image: S.photo.toDataURL('image/jpeg', 0.9), ...renderPayload(cut, color) };
+  let url;
+  if (renderMode() === 'mock') {
+    await new Promise(r => setTimeout(r, 1500));
+    let c = S.photo; if (color && S.mask) c = E.recolor(c, S.mask, color.tone, color.reflet ?? 0);
+    const out = document.createElement('canvas'); out.width = c.width; out.height = c.height; const g = out.getContext('2d');
+    g.filter = 'contrast(1.04) saturate(1.08)'; g.drawImage(c, 0, 0); return out;
+  }
+  const r = await fetch(RENDER.url, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', apikey: RENDER.anonKey, Authorization: `Bearer ${RENDER.anonKey}` }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.image) { const e = new Error(j.error || 'http_' + r.status); e.code = j.error || (r.status === 429 ? 'daily_limit' : 'error'); throw e; }
+  url = j.image;
+  return E.canvasFromUrl(url);
+}
 async function computeRenders() {
   const n = Math.max(S.svc.cut ? S.cuts.length : 0, S.svc.color ? S.colors.length : 0);
-  const out = [];
-  for (let i = 0; i < n; i++) {
+  const mode = renderMode(); renderAbort = new AbortController();
+  const one = async i => {
     const cut = S.svc.cut ? S.cuts[Math.min(i, S.cuts.length - 1)] : null;
     const color = S.svc.color ? S.colors[Math.min(i, S.colors.length - 1)] : null;
-    let base = S.photo, mask = S.mask, demoUsed = false, cutPending = false;
-    if (cut) {
+    let base = S.photo, mask = S.mask, demoUsed = false, cutPending = false, ai = false, aiError = null;
+    if (cut && mode) {
+      // la coupe change le volume des cheveux : un seul rendu génératif fait coupe + couleur
+      try { base = await aiRender(cut, color, renderAbort.signal); ai = true; }
+      catch (e) { if (renderAbort.signal.aborted) throw e; aiError = e.code || 'error'; cutPending = true; }
+      if (ai) return { url: base.toDataURL('image/jpeg', 0.9), canvas: base, cut, color, ai, mock: mode === 'mock' };
+    } else if (cut) {
       const preset = S.demo && S.cutSet === 'f' && E.DEMO.cuts[cut.shape];
       if (preset) { base = await E.canvasFromUrl(preset.photo); mask = await E.maskFromUrl(preset.mask, base.width, base.height); demoUsed = true; }
       else cutPending = true;
     }
     if (color && mask) base = E.recolor(base, mask, color.tone, color.reflet ?? 0);
-    out.push({ url: base.toDataURL('image/jpeg', 0.9), canvas: base, cut, color, demoUsed, cutPending });
-  }
-  return out;
+    return { url: base.toDataURL('image/jpeg', 0.9), canvas: base, cut, color, demoUsed, cutPending, aiError };
+  };
+  return Promise.all(Array.from({ length: n }, (_, i) => one(i)));
 }
 
 async function setPhoto(canvas, isDemo, mask) {
@@ -519,11 +550,11 @@ const A = {
   },
   toColor: () => go('color'),
   launch: async () => {
-    go('generating'); let n = 2; const tm = setInterval(() => { n = Math.max(1, n - 1); const el = document.getElementById('secs'); if (el) el.textContent = t('secondsLeft', { n }); }, 900);
-    const started = Date.now(); const R = await computeRenders(); await new Promise(r => setTimeout(r, Math.max(0, 1800 - (Date.now() - started)))); clearInterval(tm);
+    go('generating'); let n = 2; const tm = setInterval(() => { n = Math.max(1, n - 1); const el = document.getElementById('secs'); if (el && !(renderMode() && S.svc.cut)) el.textContent = t('secondsLeft', { n }); }, 900);
+    const started = Date.now(); let R; try { R = await computeRenders(); } catch (e) { clearInterval(tm); return; } await new Promise(r => setTimeout(r, Math.max(0, 1800 - (Date.now() - started)))); clearInterval(tm);
     if (route.name !== 'generating') return; S.renders = R; S.tab = 1; go('result', {}, 'replace');
   },
-  cancelGen: () => back(),
+  cancelGen: () => { renderAbort?.abort(); back(); },
   rtab: d => { S.tab = +d.i; render(); },
   editChoices: () => back(),
   chooseRender: () => { S.chosen = S.tab - 1; S.after = null; S.rating = null; go('kept'); },
