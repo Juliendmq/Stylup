@@ -156,7 +156,14 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .pill.glass { background: rgba(255,255,255,.1); border-color: rgba(244,238,242,.25); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .splash-logo { margin: 0; position: absolute; top: 80px; left: 0; right: 0; display: flex; justify-content: center; }
 .splash-foot { margin-top: auto; }
-.splash-logo img { width: 68%; max-width: 266px; height: auto; filter: drop-shadow(0 6px 24px rgba(0,0,0,.25)); }
+.splash-logo .logo-svg { width: 68%; max-width: 266px; height: auto; overflow: visible; filter: drop-shadow(0 6px 24px rgba(0,0,0,.25)); }
+.logo-svg path { fill: #f4eef2; }
+/* Dessin du logo : le contour se trace, puis le remplissage apparaît */
+.splash-logo.draw path { fill-opacity: 0; stroke: #f4eef2; stroke-width: 1.4; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: logo-trace 2s cubic-bezier(.55,0,.35,1) .35s forwards, logo-fill .7s ease 2s forwards; }
+@keyframes logo-trace { to { stroke-dashoffset: 0; } }
+@keyframes logo-fill { to { fill-opacity: 1; stroke-opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .splash-logo.draw path { animation: none; fill-opacity: 1; stroke: none; } }
 .splash-foot { padding: 0 24px max(24px, var(--safe-b)); display: flex; flex-direction: column; gap: 16px; }
 .splash-foot .btn.ghost { border-color: rgba(244,238,242,.35); background: rgba(23,18,28,.25); }
 .toast { position: absolute; left: 16px; right: 16px; bottom: calc(96px + var(--safe-b)); z-index: 30; background: var(--text); color: var(--bg); border-radius: 12px; padding: 12px 14px; font-weight: 500; animation: up .2s ease-out; }
