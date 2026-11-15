@@ -164,3 +164,28 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes grow { to { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition: none !important; } }
+
+/* comptes */
+.pw { position: relative; }
+.pw .input { padding-right: 52px; }
+.eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: 0; background: none; color: var(--muted); display: grid; place-items: center; border-radius: 10px; }
+.eye.on { color: var(--accent); }
+.input.invalid { border-color: var(--bad); }
+.err { color: var(--bad); font-size: 13px; }
+.hint { color: var(--muted); font-size: 13px; }
+.divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 11px; letter-spacing: .08em; }
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.note { margin: 0; background: color-mix(in srgb, var(--warn) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); color: var(--warn); border-radius: 12px; padding: 10px 12px; font-size: 13px; }
+.codein { font-size: 28px; letter-spacing: .5em; text-align: center; font-variant-numeric: tabular-nums; padding-left: calc(14px + .5em); }
+.hero { display: flex; flex-direction: column; gap: 6px; }
+.hero h2 { font-family: var(--display); font-size: 24px; font-weight: 700; margin: 0; text-wrap: balance; }
+.hero p { margin: 0; }
+.trade { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 14px; width: 100%; text-align: left; }
+.trade .grow { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.trade .grow img { width: 32px; height: 32px; margin-bottom: 6px; }
+.trade.on { background: #2e2437; }
+.trade:disabled { opacity: .45; cursor: default; }
+.rowlink { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0 2px; margin: 0; color: var(--muted); font-size: 14px; }
+.rowlink .link { padding: 6px 4px; }
+.link.right { align-self: flex-end; padding: 0 2px; }
+.link:disabled { color: var(--muted); text-decoration: none; cursor: default; }

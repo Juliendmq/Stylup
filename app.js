@@ -5,11 +5,11 @@ import * as E from './engine.js';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
-const store = (() => { let s = null; try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {} return Object.assign({ lang: null, pro: 'Karine', started: false, sessions: [], hidden: [] }, s || {}); })();
+const store = (() => { let s = null; try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {} return Object.assign({ lang: null, pro: 'Karine', started: false, sessions: [], hidden: [], account: null, loggedIn: false }, s || {}); })();
 if (!store.lang) { const l = (navigator.language || 'fr').slice(0, 2); store.lang = C.LANGS.includes(l) ? l : 'en'; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); return true; } catch (e) { return false; } };
 
-let route = { name: store.started ? 'home' : 'splash' }, stack = [], sheet = null, toastMsg = null, S = null, autoState = null;
+let route = { name: store.loggedIn ? 'home' : 'splash' }, stack = [], sheet = null, toastMsg = null, S = null, autoState = null, F = {};
 
 // ---------- utilitaires ----------
 const t = (k, v = {}) => (STR[store.lang][k] ?? STR.fr[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? '');
@@ -22,6 +22,7 @@ const ICON = {
   cut: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1L20 20M8.1 15.9L20 4"/>', len: '<path d="M3 16L16 3l5 5L8 21z"/><path d="M7 12l2 2M10 9l2 2M13 6l2 2"/>',
   fr: '<path d="M4 11c2-6 14-6 16 0"/><path d="M7 10v6M10.5 9v7M14 9v7M17 10v6"/>', clip: '<rect x="7" y="2" width="10" height="20" rx="3"/><path d="M7 7h10M10 2v5M14 2v5"/>',
   comb: '<path d="M3 7h18v4H3z"/><path d="M5 11v8M8.5 11v8M12 11v8M15.5 11v8M19 11v5"/>',
+  eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
 };
 const svg = (k, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
 const swatchCss = (tone, reflet = 0) => C.lockGradient(C.colorOf(tone, reflet));
@@ -37,13 +38,72 @@ const top = (title, opts = {}) => `<header class="top">${opts.noBack ? '' : `<bu
 const foot = (primary, opts = {}) => `<footer class="foot">${primary}${opts.noAbandon ? '' : `<button class="btn ghost" data-a="abandon">${t('abandon')}</button>`}</footer>`;
 const pbtn = (label, action, enabled = true, data = '') => `<button class="btn primary" data-a="${action}" ${data} ${enabled ? '' : 'disabled'}>${esc(label)}</button>`;
 const tabbar = cur => `<nav class="tabs-bar">${[['home', 'tabSessions'], ['catalog', 'tabCatalog'], ['settings', 'tabSettings']].map(([r, k]) => `<button data-a="tab" data-r="${r}" aria-current="${cur === r}"><i></i>${t(k)}</button>`).join('')}</nav>`;
+const fieldIn = (key, label, type = 'text', o = {}) => {
+  const err = F.err && F.err[key];
+  const input = `<input class="input ${o.cls || ''} ${err ? 'invalid' : ''}" id="f-${key}" data-f="${key}" type="${type}" value="${esc(F[key] || '')}" ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} autocomplete="${o.ac || 'off'}" ${o.im ? `inputmode="${o.im}"` : ''} ${o.max ? `maxlength="${o.max}"` : ''} autocapitalize="off" spellcheck="false" ${err ? 'aria-invalid="true"' : ''}>`;
+  const body = type === 'password' ? `<div class="pw">${input}<button type="button" class="eye" data-eye="f-${key}" aria-label="${t('show')}">${svg('eye')}</button></div>` : input;
+  return `<label class="field" for="f-${key}"><span class="label">${esc(label)}</span>${body}${err ? `<span class="err">${esc(err)}</span>` : o.hint ? `<span class="hint">${esc(o.hint)}</span>` : ''}</label>`;
+};
+const formErr = () => F.err && F.err.form ? `<p class="err" role="alert" style="margin:0">${esc(F.err.form)}</p>` : '';
+const authFoot = (primary, extra = '') => `<footer class="foot">${primary}${extra}</footer>`;
 const langPill = () => `<button class="pill" data-a="langSheet" aria-label="${t('language')}">${store.lang.toUpperCase()}</button>`;
 
 const SCREENS = {
   splash: () => `<div class="splash"><video class="splash-video" autoplay muted loop playsinline preload="auto" poster="assets/splash-bg.jpg" src="assets/splash.mp4" aria-hidden="true"></video><div class="splash-veil"></div>
     <div class="splash-content"><header class="splash-top"><button class="pill glass" data-a="langSheet" aria-label="${t('language')}">${store.lang.toUpperCase()}</button></header>
     <h1 class="splash-logo"><img src="assets/stylup-logo.svg" alt="Stylup" width="266" height="155"></h1>
-    <footer class="splash-foot">${pbtn(t('splashCreate'), 'start')}<button class="btn ghost" data-a="start">${t('splashLogin')}</button></footer></div></div>`,
+    <footer class="splash-foot">${pbtn(t('splashCreate'), 'toSignup')}<button class="btn ghost" data-a="toLogin">${t('splashLogin')}</button></footer></div></div>`,
+
+  signup: () => `<div class="screen">${top(t('signupTitle'))}<main class="main">
+    ${fieldIn('email', t('email'), 'email', { ph: t('emailPh'), ac: 'email', im: 'email' })}
+    ${fieldIn('pass', t('password'), 'password', { ac: 'new-password', hint: t('passHint') })}
+    ${formErr()}<div class="divider"><span>${t('or')}</span></div>
+    <button class="btn ghost" data-a="google">${t('google')}</button>
+    <p class="muted" style="margin:0">${t('legal')}</p>
+    <p class="rowlink">${t('splashLogin')} <button class="link" data-a="toLogin">${t('loginBtn')}</button></p>
+    </main>${authFoot(pbtn(t('cont'), 'signupOk'))}</div>`,
+
+  verify: () => {
+    const left = Math.max(0, Math.ceil(((F.resendAt || 0) - Date.now()) / 1000));
+    return `<div class="screen">${top(t('verifyTitle'))}<main class="main"><div class="hero"><h2>${t('verifyHead')}</h2><p class="muted">${t('verifySub', { email: esc(F.email) })}</p></div>
+    ${fieldIn('code', t('code'), 'text', { im: 'numeric', max: 6, ac: 'one-time-code', cls: 'codein' })}
+    <p class="note">${t('demoCode')}</p>
+    <button class="link" data-a="resend" id="resendBtn" ${left ? 'disabled' : ''}>${left ? t('resendIn', { n: left }) : t('resend')}</button>
+    <button class="link" data-a="changeEmail">${t('changeEmail')}</button>
+    </main>${authFoot(pbtn(t('confirmBtn'), 'verifyOk'))}</div>`;
+  },
+
+  salonSetup: () => {
+    const card = (k, name, sub, on, dis) => `<button class="trade ${on ? 'on' : ''}" data-a="trade" data-v="${k}" ${dis ? 'disabled' : ''}><span class="grow"><img src="assets/trade-${k}.svg" alt="" width="32" height="32"><strong>${t(name)}</strong><span class="muted">${dis ? t('soon') : t(sub)}</span></span><span class="radio ${on ? 'on' : ''}"></span></button>`;
+    return `<div class="screen">${top(t('salonTitle'))}<main class="main">
+    ${fieldIn('first', t('yourFirst'), 'text', { ac: 'given-name' })}
+    ${fieldIn('salon', t('salonName'), 'text', { ac: 'organization' })}
+    ${fieldIn('city', t('city'), 'text', { ac: 'address-level2' })}
+    <div class="field"><span class="label">${t('yourTrade')}</span>${card('hair', 'tradeHair', 'tradeHairSub', true)}${card('nails', 'tradeNails', 'tradeNailsSub', false, true)}${card('lashes', 'tradeLashes', 'tradeLashesSub', false, true)}</div>
+    </main>${authFoot(pbtn(t('done'), 'salonOk'))}</div>`;
+  },
+
+  login: () => `<div class="screen">${top(t('loginTitle'))}<main class="main">
+    ${fieldIn('email', t('email'), 'email', { ph: t('emailPh'), ac: 'email', im: 'email' })}
+    ${fieldIn('pass', t('password'), 'password', { ac: 'current-password' })}
+    ${formErr()}<button class="link right" data-a="toForgot">${t('forgot')}</button>
+    <div class="divider"><span>${t('or')}</span></div>
+    <button class="btn ghost" data-a="google">${t('google')}</button>
+    <p class="rowlink">${t('noAccount')} <button class="link" data-a="toSignup">${t('createAccount')}</button></p>
+    </main>${authFoot(pbtn(t('loginBtn'), 'loginOk'))}</div>`,
+
+  forgot: () => `<div class="screen">${top(t('forgotTitle'))}<main class="main"><p class="muted" style="margin:0">${t('forgotSub')}</p>
+    ${fieldIn('email', t('email'), 'email', { ph: t('emailPh'), ac: 'email', im: 'email' })}
+    </main>${authFoot(pbtn(t('sendLink'), 'forgotOk'))}</div>`,
+
+  forgotSent: () => `<div class="screen">${top(t('forgotTitle'))}<main class="main"><div class="hero"><h2>${t('sentTitle')}</h2><p class="muted">${t('sentSub', { email: esc(F.sentTo) })}</p></div>
+    <p class="note">${t('demoLink')}</p><button class="btn ghost" data-a="openLink">${t('openLink')}</button>
+    </main>${authFoot(pbtn(t('backLogin'), 'backLogin'))}</div>`,
+
+  reset: () => `<div class="screen">${top(t('resetTitle'))}<main class="main">
+    ${fieldIn('newPass', t('newPass'), 'password', { ac: 'new-password', hint: t('passHint') })}
+    ${fieldIn('newPass2', t('newPass2'), 'password', { ac: 'new-password' })}
+    </main>${authFoot(pbtn(t('savePass'), 'resetOk'))}</div>`,
 
   home: () => `<div class="screen">${top(t('hello', { name: store.pro }), { noBack: true, big: true, right: langPill() + `<span class="avatar">${esc((store.pro || '?')[0].toUpperCase())}</span>` })}
     <main class="main"><section class="card"><h2>${t('newClientTitle')}</h2><p class="muted" style="margin:0">${t('newClientSub')}</p>${pbtn(t('newSession'), 'newSession')}</section>
@@ -158,6 +218,7 @@ const SCREENS = {
     <label class="field"><span class="label">${t('proName')}</span><input class="input" data-in="pro" value="${esc(store.pro)}" autocomplete="off"></label>
     <div class="field"><span class="label">${t('language')}</span><div class="chips">${C.LANGS.map(l => `<button data-a="setLang" data-l="${l}" aria-pressed="${store.lang === l}">${l.toUpperCase()}</button>`).join('')}</div></div>
     <section class="card"><h3>${t('hairAuto')}</h3><span class="muted">${autoState === null ? t('checking') : autoState ? t('available') : t('unavailable')}</span><h3 style="margin-top:6px">${t('cutService')}</h3><span class="muted">${t('notConnected')}</span></section>
+    ${store.account ? `<section class="card"><h3>${t('account')}</h3><span class="muted">${esc(store.account.email)}${store.account.salon ? ' · ' + esc(store.account.salon) : ''}</span><button class="btn ghost small" data-a="logout">${t('logout')}</button></section>` : ''}
     <section class="card"><h3>${t('storage')}</h3><span class="muted">${t('storageSub')}</span><button class="btn ghost small" data-a="clearAll">${t('clearAll')}</button></section>
     <p class="muted" style="text-align:center">${t('version')}</p></main>${tabbar('settings')}</div>`,
 };
@@ -249,9 +310,71 @@ function brushToMask() {
   const out = E.canvasOf(w, h); const o = out.getContext('2d'); o.fillStyle = '#000'; o.fillRect(0, 0, w, h); o.filter = `blur(${Math.max(2, Math.round(w / 200))}px)`; o.drawImage(m, 0, 0); return out;
 }
 
+// ---------- comptes (prototype : tout reste sur l'appareil, aucun e-mail n'est envoyé) ----------
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const passOk = p => (p || '').length >= 8 && /\d/.test(p) && /[A-Za-zÀ-ÿ]/.test(p);
+async function hashPass(email, pass) {
+  const s = 'stylup:' + email.trim().toLowerCase() + ':' + pass;
+  try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+  catch (e) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return 'x' + h; }
+}
+const fail = errs => { F.err = errs; render(); const k = Object.keys(errs)[0]; document.getElementById('f-' + k)?.focus(); };
+const enterApp = () => { store.loggedIn = true; store.started = true; save(); F = {}; stack = []; route = { name: 'home' }; render(); };
+setInterval(() => { if (route.name !== 'verify') return; const b = document.getElementById('resendBtn'); if (!b) return; const left = Math.max(0, Math.ceil(((F.resendAt || 0) - Date.now()) / 1000)); b.disabled = !!left; b.textContent = left ? t('resendIn', { n: left }) : t('resend'); }, 1000);
+
 // ---------- actions ----------
 const A = {
-  back, start: () => { store.started = true; save(); go('home', {}, 'replace'); },
+  back,
+  toSignup: () => { F = { email: F.email || '' }; go('signup'); },
+  toLogin: () => { F = { email: (store.account && store.account.email) || F.email || '' }; go('login'); },
+  google: () => toast(t('googleSoon')),
+  signupOk: async () => {
+    const email = (F.email || '').trim(), errs = {};
+    if (!EMAIL_RE.test(email)) errs.email = t('errEmail');
+    if (!passOk(F.pass)) errs.pass = t('errPass');
+    if (!errs.email && store.account && store.account.verified && store.account.email.toLowerCase() === email.toLowerCase()) errs.email = t('errExists');
+    if (Object.keys(errs).length) return fail(errs);
+    store.account = { email, hash: await hashPass(email, F.pass), verified: false }; save();
+    F = { email, code: '', resendAt: Date.now() + 30000 }; go('verify');
+  },
+  resend: () => { F.resendAt = Date.now() + 30000; F.err = null; toast(t('resent')); },
+  changeEmail: () => { F = { email: F.email }; stack = [{ name: 'splash' }]; route = { name: 'signup' }; render(); },
+  verifyOk: () => {
+    if ((F.code || '').replace(/\D/g, '') !== '123456') return fail({ code: t('errCode') });
+    store.account.verified = true; save();
+    F = { first: store.account.first || '', salon: store.account.salon || '', city: store.account.city || '' }; go('salonSetup', {}, 'replace');
+  },
+  trade: () => {},
+  salonOk: () => {
+    const errs = {}; ['first', 'salon'].forEach(k => { if (!(F[k] || '').trim()) errs[k] = t('errRequired'); });
+    if (Object.keys(errs).length) return fail(errs);
+    Object.assign(store.account, { first: F.first.trim(), salon: F.salon.trim(), city: (F.city || '').trim(), trade: 'hair' }); store.pro = F.first.trim(); enterApp();
+  },
+  loginOk: async () => {
+    const email = (F.email || '').trim(), errs = {};
+    if (!EMAIL_RE.test(email)) errs.email = t('errEmail');
+    if (!F.pass) errs.pass = t('errRequired');
+    if (Object.keys(errs).length) return fail(errs);
+    const acc = store.account;
+    if (!acc || acc.email.toLowerCase() !== email.toLowerCase() || acc.hash !== await hashPass(email, F.pass)) return fail({ form: t('errLogin') });
+    if (!acc.verified) { F = { email, code: '', resendAt: Date.now() + 30000 }; return go('verify'); }
+    if (!acc.salon) { F = { first: '', salon: '', city: '' }; return go('salonSetup'); }
+    store.pro = acc.first || store.pro; enterApp();
+  },
+  toForgot: () => { F = { email: F.email || '' }; go('forgot'); },
+  forgotOk: () => { const email = (F.email || '').trim(); if (!EMAIL_RE.test(email)) return fail({ email: t('errEmail') }); F = { sentTo: email }; go('forgotSent'); },
+  openLink: () => { F = { sentTo: F.sentTo }; go('reset'); },
+  backLogin: () => { F = { email: F.sentTo || '' }; stack = [{ name: 'splash' }]; route = { name: 'login' }; render(); },
+  resetOk: async () => {
+    const errs = {};
+    if (!passOk(F.newPass)) errs.newPass = t('errPass');
+    else if (F.newPass !== F.newPass2) errs.newPass2 = t('errMatch');
+    if (Object.keys(errs).length) return fail(errs);
+    const acc = store.account;
+    if (acc && acc.email.toLowerCase() === (F.sentTo || '').toLowerCase()) { acc.hash = await hashPass(acc.email, F.newPass); save(); }
+    const email = F.sentTo; F = { email }; stack = [{ name: 'splash' }]; route = { name: 'login' }; toast(t('passChanged'));
+  },
+  logout: () => { store.loggedIn = false; save(); S = null; F = {}; stack = []; route = { name: 'splash' }; render(); },
   tab: d => { stack = []; route = { name: d.r }; sheet = null; render(); if (d.r === 'settings' && autoState === null) E.autoAvailable().then(v => { autoState = v; render(); }); },
   langSheet: () => { sheet = { kind: 'lang' }; render(); },
   setLang: d => { store.lang = d.l; save(); if (sheet && sheet.kind === 'lang') sheet = null; render(); },
@@ -317,8 +440,9 @@ const A = {
   clearAll: () => { store.sessions = []; save(); toast(t('cleared')); },
 };
 
-$app.addEventListener('click', e => { const el = e.target.closest('[data-a]'); if (!el || el.disabled) return; if (el.dataset.a === 'closeSheet' && el.classList.contains('sheet')) return; const f = A[el.dataset.a]; if (f) { e.preventDefault(); f(el.dataset, el); } });
-$app.addEventListener('input', e => { const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'pro') { store.pro = e.target.value || 'Karine'; save(); } else if (k === 'brushSize') route.size = +e.target.value; });
+$app.addEventListener('click', e => { const eye = e.target.closest('[data-eye]'); if (eye) { e.preventDefault(); const inp = document.getElementById(eye.dataset.eye); inp.type = inp.type === 'password' ? 'text' : 'password'; eye.setAttribute('aria-label', inp.type === 'password' ? t('show') : t('hide')); eye.classList.toggle('on', inp.type === 'text'); return; } const el = e.target.closest('[data-a]'); if (!el || el.disabled) return; if (el.dataset.a === 'closeSheet' && el.classList.contains('sheet')) return; const f = A[el.dataset.a]; if (f) { e.preventDefault(); f(el.dataset, el); } });
+$app.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.f) { e.preventDefault(); $app.querySelector('.foot .btn.primary')?.click(); } });
+$app.addEventListener('input', e => { if (e.target.dataset.f) { const k = e.target.dataset.f; F[k] = e.target.value; if (F.err && (F.err[k] || F.err.form)) { delete F.err[k]; delete F.err.form; e.target.classList.remove('invalid'); e.target.removeAttribute('aria-invalid'); e.target.closest('.field')?.querySelector('.err')?.remove(); $app.querySelector('p.err[role=alert]')?.remove(); } return; } const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'pro') { store.pro = e.target.value || 'Karine'; save(); } else if (k === 'brushSize') route.size = +e.target.value; });
 $app.addEventListener('change', async e => {
   const k = e.target.dataset.file; if (!k) return; const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
   const c = await E.photoFromFile(f);
@@ -327,7 +451,7 @@ $app.addEventListener('change', async e => {
 
 function render() {
   document.documentElement.lang = store.lang;
-  if (!S && !['splash', 'home', 'catalog', 'settings', 'session'].includes(route.name)) route = { name: 'home' };
+  if (!S && !['splash', 'home', 'catalog', 'settings', 'session', 'signup', 'verify', 'salonSetup', 'login', 'forgot', 'forgotSent', 'reset'].includes(route.name)) route = { name: store.loggedIn ? 'home' : 'splash' };
   const html = (SCREENS[route.name] || SCREENS.home)();
   $app.innerHTML = html + sheetHtml() + (toastMsg ? `<div class="toast" role="status">${esc(toastMsg)}</div>` : '');
   if (route.name === 'brush') mountBrush();
