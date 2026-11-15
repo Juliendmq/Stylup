@@ -1,7 +1,7 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151316';
-import * as C from './catalog.js?v=202611151316';
-import * as E from './engine.js?v=202611151316';
+import { STR } from './i18n.js?v=202611151318';
+import * as C from './catalog.js?v=202611151318';
+import * as E from './engine.js?v=202611151318';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -248,8 +248,11 @@ const SCREENS = {
     ${prof('first', t('yourFirst'), acc.first || store.pro, 'given-name')}
     ${prof('salon', t('salonName'), acc.salon, 'organization')}
     ${prof('city', t('city'), acc.city, 'address-level2')}
+    <hr class="sep section">
     <div class="field"><span class="label">${t('language')}</span><div class="chips">${C.LANGS.map(l => `<button data-a="setLang" data-l="${l}" aria-pressed="${store.lang === l}">${langLabel(l)}</button>`).join('')}</div></div>
+    <hr class="sep section">
     <section class="card"><h3>${t('storage')}</h3><span class="muted">${t('storageSub')}</span><button class="btn ghost small" data-a="clearAll">${t('clearAll')}</button></section>
+    <hr class="sep section">
     ${store.account ? `<section class="card"><h3>${t('account')}</h3><span class="muted">${esc(store.account.email)}</span><button class="btn ghost small" data-a="logout">${t('logout')}</button></section>` : ''}
     <p class="muted" style="text-align:center">${t('version')}</p></main>${tabbar('settings')}</div>`;
   },

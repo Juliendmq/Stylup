@@ -227,4 +227,5 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .chev-s { display: inline-grid; margin-left: -2px; opacity: .8; }
 
 .sep { border: 0; height: 1px; background: var(--line); margin: 8px 0 0; }
+.sep.section { margin: 8px 0; } /* séparateur entre sections : 24 px de part et d'autre */
 .legal { margin: 0; text-align: center; font-size: .8125rem; line-height: 1.45; color: var(--muted); }
