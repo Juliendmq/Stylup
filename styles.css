@@ -112,7 +112,7 @@ input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; poin
 .stars button { flex: 1; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); font-variant-numeric: tabular-nums; }
 .stars button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chips button { padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 14px; }
+.chips button { padding: 9px 9px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 14px; }
 .chips button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 .seg { display: flex; gap: 6px; }
 .seg button { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); }
@@ -189,3 +189,6 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .rowlink .link { padding: 6px 4px; }
 .link.right { align-self: flex-end; padding: 0 2px; }
 .link:disabled { color: var(--muted); text-decoration: none; cursor: default; }
+
+.flag { font-size: 1.15em; line-height: 1; }
+.pill { display: inline-flex; align-items: center; gap: 6px; }

@@ -17,6 +17,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const lab = o => C.label(o, store.lang), des = o => C.describe(o, store.lang);
 const hidden = k => store.hidden.includes(k);
 const pad = n => String(n).padStart(2, '0');
+const FLAG = { fr: '🇫🇷', en: '🇬🇧', it: '🇮🇹', es: '🇪🇸', de: '🇩🇪' };
+const langLabel = l => `<span class="flag" aria-hidden="true">${FLAG[l]}</span> ${l.toUpperCase()}`;
 const ICON = {
   back: '<path d="M15 5l-7 7 7 7"/>', right: '<path d="M9 5l7 7-7 7"/>', up: '<path d="M5 15l7-7 7 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>',
   cut: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1L20 20M8.1 15.9L20 4"/>', len: '<path d="M3 16L16 3l5 5L8 21z"/><path d="M7 12l2 2M10 9l2 2M13 6l2 2"/>',
@@ -46,11 +48,11 @@ const fieldIn = (key, label, type = 'text', o = {}) => {
 };
 const formErr = () => F.err && F.err.form ? `<p class="err" role="alert" style="margin:0">${esc(F.err.form)}</p>` : '';
 const authFoot = (primary, extra = '') => `<footer class="foot">${primary}${extra}</footer>`;
-const langPill = () => `<button class="pill" data-a="langSheet" aria-label="${t('language')}">${store.lang.toUpperCase()}</button>`;
+const langPill = () => `<button class="pill" data-a="langSheet" aria-label="${t('language')}">${langLabel(store.lang)}</button>`;
 
 const SCREENS = {
   splash: () => `<div class="splash"><video class="splash-video" autoplay muted loop playsinline preload="auto" poster="assets/splash-bg.jpg" src="assets/splash.mp4" aria-hidden="true"></video><div class="splash-veil"></div>
-    <div class="splash-content"><header class="splash-top"><button class="pill glass" data-a="langSheet" aria-label="${t('language')}">${store.lang.toUpperCase()}</button></header>
+    <div class="splash-content"><header class="splash-top"><button class="pill glass" data-a="langSheet" aria-label="${t('language')}">${langLabel(store.lang)}</button></header>
     <h1 class="splash-logo"><img src="assets/stylup-logo.svg" alt="Stylup" width="266" height="155"></h1>
     <footer class="splash-foot">${pbtn(t('splashCreate'), 'toSignup')}<button class="btn ghost" data-a="toLogin">${t('splashLogin')}</button></footer></div></div>`,
 
@@ -216,7 +218,7 @@ const SCREENS = {
 
   settings: () => `<div class="screen">${top(t('settingsTitle'), { noBack: true, big: true })}<main class="main">
     <label class="field"><span class="label">${t('proName')}</span><input class="input" data-in="pro" value="${esc(store.pro)}" autocomplete="off"></label>
-    <div class="field"><span class="label">${t('language')}</span><div class="chips">${C.LANGS.map(l => `<button data-a="setLang" data-l="${l}" aria-pressed="${store.lang === l}">${l.toUpperCase()}</button>`).join('')}</div></div>
+    <div class="field"><span class="label">${t('language')}</span><div class="chips">${C.LANGS.map(l => `<button data-a="setLang" data-l="${l}" aria-pressed="${store.lang === l}">${langLabel(l)}</button>`).join('')}</div></div>
     <section class="card"><h3>${t('hairAuto')}</h3><span class="muted">${autoState === null ? t('checking') : autoState ? t('available') : t('unavailable')}</span><h3 style="margin-top:6px">${t('cutService')}</h3><span class="muted">${t('notConnected')}</span></section>
     ${store.account ? `<section class="card"><h3>${t('account')}</h3><span class="muted">${esc(store.account.email)}${store.account.salon ? ' · ' + esc(store.account.salon) : ''}</span><button class="btn ghost small" data-a="logout">${t('logout')}</button></section>` : ''}
     <section class="card"><h3>${t('storage')}</h3><span class="muted">${t('storageSub')}</span><button class="btn ghost small" data-a="clearAll">${t('clearAll')}</button></section>
@@ -239,7 +241,7 @@ function sheetHtml() {
     const opts = f.options.filter(o => !hidden(S.cutSet + ':' + f.key + ':' + o.id) || o.id === sheet.sel);
     body = opts.map(o => { const okk = C.isAllowed(f, o, cut); return `<button class="opt" data-a="pick" data-v="${o.id}" aria-pressed="${sheet.sel === o.id}" ${okk ? '' : 'disabled'}><span class="grow"><strong>${esc(lab(o))}</strong><span class="muted">${esc(okk ? des(o) : t('incompatible'))}</span></span><span class="radio ${sheet.sel === o.id ? 'on' : ''}"></span></button>`; }).join('');
   } else if (sheet.kind === 'lang') {
-    title = t('language'); body = `<div class="chips">${C.LANGS.map(l => `<button data-a="setLang" data-l="${l}" aria-pressed="${store.lang === l}">${l.toUpperCase()}</button>`).join('')}</div>`; btn = '';
+    title = t('language'); body = `<div class="chips">${C.LANGS.map(l => `<button data-a="setLang" data-l="${l}" aria-pressed="${store.lang === l}">${langLabel(l)}</button>`).join('')}</div>`; btn = '';
   } else if (sheet.kind === 'abandon') {
     title = t('abandonQ'); sub = t('abandonSub'); body = ''; btn = `${pbtn(t('abandonYes'), 'abandonYes')}<button class="btn ghost" data-a="closeSheet">${t('abandonNo')}</button>`;
   }
@@ -453,7 +455,9 @@ function render() {
   document.documentElement.lang = store.lang;
   if (!S && !['splash', 'home', 'catalog', 'settings', 'session', 'signup', 'verify', 'salonSetup', 'login', 'forgot', 'forgotSent', 'reset'].includes(route.name)) route = { name: store.loggedIn ? 'home' : 'splash' };
   const html = (SCREENS[route.name] || SCREENS.home)();
+  const oldVid = $app.querySelector('.splash-video');
   $app.innerHTML = html + sheetHtml() + (toastMsg ? `<div class="toast" role="status">${esc(toastMsg)}</div>` : '');
+  const newVid = $app.querySelector('.splash-video'); if (oldVid && newVid) newVid.replaceWith(oldVid); // la vidéo continue au lieu de repartir du début
   if (route.name === 'brush') mountBrush();
   const v = $app.querySelector('.splash-video'); if (v) { if (matchMedia('(prefers-reduced-motion: reduce)').matches) v.pause(); else v.play().catch(() => {}); }
 }
