@@ -1,5 +1,5 @@
 // Moteur d'image : chargement des photos, masque cheveux, recoloration, rendus de coupe.
-import { colorOf } from './catalog.js?v=202611151331';
+import { colorOf } from './catalog.js?v=202611151333';
 
 export const DEMO = {
   photo: 'assets/demo-original.jpg',

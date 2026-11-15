@@ -1,7 +1,7 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151331';
-import * as C from './catalog.js?v=202611151331';
-import * as E from './engine.js?v=202611151331';
+import { STR } from './i18n.js?v=202611151333';
+import * as C from './catalog.js?v=202611151333';
+import * as E from './engine.js?v=202611151333';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -257,12 +257,17 @@ const SCREENS = {
     if (trade !== 'hair') return `<div class="screen">${top(t('catalogTitle'), { noBack: true, big: true })}<main class="main">${seg}
       <section class="card soon-card"><img src="assets/trade-${trade}.svg" alt="" width="40" height="40"><h3>${t(TR[trade])} · ${t('soon')}</h3><p class="muted" style="margin:0">${t('catSoonSub', { trade: t(TR[trade]).toLowerCase() })}</p></section>
       </main>${tabbar('catalog')}</div>`;
-    return `<div class="screen">${top(t('catalogTitle'), { noBack: true, big: true })}<main class="main">${seg}<p class="muted" style="margin:0">${t('catalogSub')}</p>
-      <section class="card"><span class="label">${t('myColors')}</span>${store.custom.colors.length ? store.custom.colors.map(x => mine('ucolor:' + x.id, x.name, C.colorCode(x.tone, x.reflet) + ' · ' + lab(C.TONES.find(y => y.id === x.tone)), colorSw(x), 'editColor', `data-id="${x.id}"`)).join('') : `<p class="muted" style="margin:0">${t('myColorsEmpty')}</p>`}${add(t('addMyColor'), 'newColor')}</section>
+    // Second niveau (coiffure) : Couleur / Coupe femme / Coupe homme, une page de réglage plus légère chacune
+    const sub = route.sub || 'color';
+    const SUBS = { color: 'catColor', f: 'catCutF', h: 'catCutH' };
+    const seg2 = `<div class="subseg" role="tablist">${Object.keys(SUBS).map(k => `<button role="tab" data-a="catSub" data-s="${k}" aria-selected="${sub === k}">${t(SUBS[k])}</button>`).join('')}</div>`;
+    const content = sub === 'color'
+      ? `<section class="card"><span class="label">${t('myColors')}</span>${store.custom.colors.length ? store.custom.colors.map(x => mine('ucolor:' + x.id, x.name, C.colorCode(x.tone, x.reflet) + ' · ' + lab(C.TONES.find(y => y.id === x.tone)), colorSw(x), 'editColor', `data-id="${x.id}"`)).join('') : `<p class="muted" style="margin:0">${t('myColorsEmpty')}</p>`}${add(t('addMyColor'), 'newColor')}</section>
       <section class="card"><span class="label">${t('tones')}</span>${C.TONES.map(x => tog('tone:' + x.id, x.id + ' · ' + lab(x), swatchCss(x.id))).join('')}</section>
-      <section class="card"><span class="label">${t('reflets')}</span>${C.REFLETS.map(x => tog('reflet:' + x.id, '.' + x.id + ' · ' + lab(x), swatchCss(7, x.id))).join('')}</section>
-      <section class="card"><span class="label">${t('cutsF')}</span>${C.CUT_SETS.f[1].options.filter(o => !o.custom).map(o => tog('f:shape:' + o.id, lab(o))).join('')}${cutRows('f')}${add(t('addMyCut'), 'newCut', 'data-set="f"')}</section>
-      <section class="card"><span class="label">${t('cutsH')}</span>${C.CUT_SETS.h[2].options.filter(o => !o.custom).map(o => tog('h:style:' + o.id, lab(o))).join('')}${cutRows('h')}${add(t('addMyCut'), 'newCut', 'data-set="h"')}</section>
+      <section class="card"><span class="label">${t('reflets')}</span>${C.REFLETS.map(x => tog('reflet:' + x.id, '.' + x.id + ' · ' + lab(x), swatchCss(7, x.id))).join('')}</section>`
+      : `<section class="card"><span class="label">${t(sub === 'f' ? 'cutsF' : 'cutsH')}</span>${C.CUT_SETS[sub].find(x => x.key === C.CUSTOM_FIELD[sub]).options.filter(o => !o.custom).map(o => tog(sub + ':' + C.CUSTOM_FIELD[sub] + ':' + o.id, lab(o))).join('')}${cutRows(sub)}${add(t('addMyCut'), 'newCut', `data-set="${sub}"`)}</section>`;
+    return `<div class="screen">${top(t('catalogTitle'), { noBack: true, big: true })}<main class="main">${seg}${seg2}<p class="muted" style="margin:0">${t('catalogSub')}</p>
+      ${content}
       </main>${tabbar('catalog')}</div>`;
   },
 
@@ -448,6 +453,7 @@ const A = {
     const email = F.sentTo; F = { email }; stack = [{ name: 'splash' }]; route = { name: 'login' }; toast(t('passChanged'));
   },
   logout: () => { store.loggedIn = false; save(); S = null; F = {}; stack = []; route = { name: 'splash' }; render(); },
+  catSub: d => { route = { ...route, sub: d.s }; render(); },
   tab: d => { stack = []; route = { name: d.r }; sheet = null; render(); },
   langSheet: () => { sheet = { kind: 'lang' }; render(); },
   setLang: d => { store.lang = d.l; save(); if (sheet && sheet.kind === 'lang') sheet = null; render(); },
