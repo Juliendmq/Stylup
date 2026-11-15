@@ -1,7 +1,7 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151328';
-import * as C from './catalog.js?v=202611151328';
-import * as E from './engine.js?v=202611151328';
+import { STR } from './i18n.js?v=202611151329';
+import * as C from './catalog.js?v=202611151329';
+import * as E from './engine.js?v=202611151329';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -249,7 +249,14 @@ const SCREENS = {
     const mine = (k, name, sub, sw, act, data) => `<div class="trow mine">${sw ? `<span class="swatch" style="background:${sw}"></span>` : ''}<button class="grow mine-edit" data-a="${act}" ${data} aria-label="${esc(t('edit2') + ' : ' + name)}"><span style="${hidden(k) ? 'color:var(--muted)' : ''}">${esc(name)}</span><span class="muted">${esc(sub)}</span></button><button class="tswitch" data-a="hide" data-k="${k}" role="switch" aria-checked="${!hidden(k)}" aria-label="${esc(name)}"><span class="toggle ${hidden(k) ? '' : 'on'}"></span></button></div>`;
     const add = (label, act, data = '') => `<button class="addrow" data-a="${act}" ${data}><span class="plus">${svg('plus', 18)}</span>${esc(label)}</button>`;
     const cutRows = set => store.custom.cuts[set].map(x => mine(set + ':' + C.CUSTOM_FIELD[set] + ':' + x.id, x.name, x.desc || t('customTag'), '', 'editCut', `data-set="${set}" data-id="${x.id}"`)).join('');
-    return `<div class="screen">${top(t('catalogTitle'), { noBack: true, big: true })}<main class="main"><p class="muted" style="margin:0">${t('catalogSub')}</p>
+    // Premier niveau : le métier (Coiffure / Ongles / Cils), chaque métier a son propre catalogue
+    const trade = route.trade || (store.account && store.account.trade) || 'hair';
+    const TR = { hair: 'tradeHair', nails: 'tradeNails', lashes: 'tradeLashes' };
+    const seg = `<div class="tradeseg" role="tablist" aria-label="${t('yourTrade')}">${Object.keys(TR).map(k => `<button role="tab" data-a="catTrade" data-t="${k}" aria-selected="${trade === k}"><img src="assets/trade-${k}.svg" alt="" width="20" height="20">${t(TR[k])}</button>`).join('')}</div>`;
+    if (trade !== 'hair') return `<div class="screen">${top(t('catalogTitle'), { noBack: true, big: true })}<main class="main">${seg}
+      <section class="card soon-card"><img src="assets/trade-${trade}.svg" alt="" width="40" height="40"><h3>${t(TR[trade])} · ${t('soon')}</h3><p class="muted" style="margin:0">${t('catSoonSub', { trade: t(TR[trade]).toLowerCase() })}</p></section>
+      </main>${tabbar('catalog')}</div>`;
+    return `<div class="screen">${top(t('catalogTitle'), { noBack: true, big: true })}<main class="main">${seg}<p class="muted" style="margin:0">${t('catalogSub')}</p>
       <section class="card"><span class="label">${t('myColors')}</span>${store.custom.colors.length ? store.custom.colors.map(x => mine('ucolor:' + x.id, x.name, C.colorCode(x.tone, x.reflet) + ' · ' + lab(C.TONES.find(y => y.id === x.tone)), colorSw(x), 'editColor', `data-id="${x.id}"`)).join('') : `<p class="muted" style="margin:0">${t('myColorsEmpty')}</p>`}${add(t('addMyColor'), 'newColor')}</section>
       <section class="card"><span class="label">${t('tones')}</span>${C.TONES.map(x => tog('tone:' + x.id, x.id + ' · ' + lab(x), swatchCss(x.id))).join('')}</section>
       <section class="card"><span class="label">${t('reflets')}</span>${C.REFLETS.map(x => tog('reflet:' + x.id, '.' + x.id + ' · ' + lab(x), swatchCss(7, x.id))).join('')}</section>
@@ -440,6 +447,7 @@ const A = {
     const email = F.sentTo; F = { email }; stack = [{ name: 'splash' }]; route = { name: 'login' }; toast(t('passChanged'));
   },
   logout: () => { store.loggedIn = false; save(); S = null; F = {}; stack = []; route = { name: 'splash' }; render(); },
+  catTrade: d => { route = { ...route, trade: d.t }; render(); },
   tab: d => { stack = []; route = { name: d.r }; sheet = null; render(); },
   langSheet: () => { sheet = { kind: 'lang' }; render(); },
   setLang: d => { store.lang = d.l; save(); if (sheet && sheet.kind === 'lang') sheet = null; render(); },
