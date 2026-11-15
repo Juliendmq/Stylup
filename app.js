@@ -1,13 +1,14 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151325';
-import * as C from './catalog.js?v=202611151325';
-import * as E from './engine.js?v=202611151325';
+import { STR } from './i18n.js?v=202611151328';
+import * as C from './catalog.js?v=202611151328';
+import * as E from './engine.js?v=202611151328';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
 const store = (() => { let s = null; try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {} return Object.assign({ lang: null, pro: 'Karine', started: false, sessions: [], hidden: [], account: null, loggedIn: false }, s || {}); })();
 // Couleurs et coupes ajoutées par le salon dans le Catalogue
 store.custom = Object.assign({ colors: [], cuts: { f: [], h: [] } }, store.custom || {});
+store.custom.colors.forEach(c => delete c.reflet2); // plus de reflet secondaire
 C.applyCustomCuts(store.custom.cuts);
 if (!store.lang) { const l = (navigator.language || 'fr').slice(0, 2); store.lang = C.LANGS.includes(l) ? l : 'en'; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); return true; } catch (e) { return false; } };
@@ -31,8 +32,8 @@ const ICON = {
   eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
 };
 const svg = (k, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
-const swatchCss = (tone, reflet = 0, reflet2 = null) => C.lockGradient(C.colorOf(tone, reflet, reflet2));
-const colorSw = c => swatchCss(c.tone, c.reflet ?? 0, c.reflet2 ?? null);
+const swatchCss = (tone, reflet = 0) => C.lockGradient(C.colorOf(tone, reflet));
+const colorSw = c => swatchCss(c.tone, c.reflet ?? 0);
 const uid = () => 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 const fmtDate = ts => new Intl.DateTimeFormat(store.lang, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(ts));
 
@@ -198,7 +199,7 @@ const SCREENS = {
     const cards = S.colors.map((c, i) => {
       const open = S.open.color === i; const tn = c.tone && C.TONES.find(x => x.id === c.tone); const rf = c.reflet != null && C.REFLETS.find(x => x.id === c.reflet);
       if (c.custom) {
-        const row = `<button class="sel" data-a="toneSheet" data-i="${i}"><span class="sw" style="background:${colorSw(c)}"></span><span class="grow"><strong>${esc(c.name)}</strong><span class="muted">${C.colorCode(c.tone, c.reflet, c.reflet2)} · ${t('customTag')}</span></span><span class="mod">${t('modify')}</span></button>`;
+        const row = `<button class="sel" data-a="toneSheet" data-i="${i}"><span class="sw" style="background:${colorSw(c)}"></span><span class="grow"><strong>${esc(c.name)}</strong><span class="muted">${C.colorCode(c.tone, c.reflet)} · ${t('customTag')}</span></span><span class="mod">${t('modify')}</span></button>`;
         return `<section class="card"><button class="cardhead" data-a="openCard" data-kind="color" data-i="${i}" aria-expanded="${open}"><h3>${t('colorN', { n: pad(i + 1) })}${!open ? ` <span class="muted" style="font-weight:400">· ${esc(colorTitle(c))}</span>` : ''}</h3><span class="chev">${svg('up')}</span></button>
         ${open ? `<div class="field"><span class="label">${t('myColors')}</span>${row}</div>${i > 0 ? `<button class="link" data-a="removeCard" data-kind="color" data-i="${i}">${t('remove')}</button>` : ''}` : ''}</section>`;
       }
@@ -249,7 +250,7 @@ const SCREENS = {
     const add = (label, act, data = '') => `<button class="addrow" data-a="${act}" ${data}><span class="plus">${svg('plus', 18)}</span>${esc(label)}</button>`;
     const cutRows = set => store.custom.cuts[set].map(x => mine(set + ':' + C.CUSTOM_FIELD[set] + ':' + x.id, x.name, x.desc || t('customTag'), '', 'editCut', `data-set="${set}" data-id="${x.id}"`)).join('');
     return `<div class="screen">${top(t('catalogTitle'), { noBack: true, big: true })}<main class="main"><p class="muted" style="margin:0">${t('catalogSub')}</p>
-      <section class="card"><span class="label">${t('myColors')}</span>${store.custom.colors.length ? store.custom.colors.map(x => mine('ucolor:' + x.id, x.name, C.colorCode(x.tone, x.reflet, x.reflet2) + ' · ' + lab(C.TONES.find(y => y.id === x.tone)), colorSw(x), 'editColor', `data-id="${x.id}"`)).join('') : `<p class="muted" style="margin:0">${t('myColorsEmpty')}</p>`}${add(t('addMyColor'), 'newColor')}</section>
+      <section class="card"><span class="label">${t('myColors')}</span>${store.custom.colors.length ? store.custom.colors.map(x => mine('ucolor:' + x.id, x.name, C.colorCode(x.tone, x.reflet) + ' · ' + lab(C.TONES.find(y => y.id === x.tone)), colorSw(x), 'editColor', `data-id="${x.id}"`)).join('') : `<p class="muted" style="margin:0">${t('myColorsEmpty')}</p>`}${add(t('addMyColor'), 'newColor')}</section>
       <section class="card"><span class="label">${t('tones')}</span>${C.TONES.map(x => tog('tone:' + x.id, x.id + ' · ' + lab(x), swatchCss(x.id))).join('')}</section>
       <section class="card"><span class="label">${t('reflets')}</span>${C.REFLETS.map(x => tog('reflet:' + x.id, '.' + x.id + ' · ' + lab(x), swatchCss(7, x.id))).join('')}</section>
       <section class="card"><span class="label">${t('cutsF')}</span>${C.CUT_SETS.f[1].options.filter(o => !o.custom).map(o => tog('f:shape:' + o.id, lab(o))).join('')}${cutRows('f')}${add(t('addMyCut'), 'newCut', 'data-set="f"')}</section>
@@ -282,7 +283,7 @@ function sheetHtml() {
   if (sheet.kind === 'tone') {
     title = t('toneSheet'); sub = t('toneSheetSub');
     const mine = store.custom.colors.filter(x => !hidden('ucolor:' + x.id) || x.id === sheet.sel);
-    body = (mine.length ? `<span class="label">${t('yourColorsSheet')}</span><div class="grid3">${mine.map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${colorSw(x)}"></i><span class="tname">${esc(x.name)}</span><span class="tcode">${C.colorCode(x.tone, x.reflet, x.reflet2)}</span></button>`).join('')}</div><span class="label" style="margin-top:8px">${t('tonesSheet')}</span>` : '') + `<div class="grid3">${C.TONES.filter(x => !hidden('tone:' + x.id) || x.id === sheet.sel).map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${swatchCss(x.id)}"></i>${esc(lab(x))}</button>`).join('')}</div>`;
+    body = (mine.length ? `<span class="label">${t('yourColorsSheet')}</span><div class="grid3">${mine.map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${colorSw(x)}"></i><span class="tname">${esc(x.name)}</span><span class="tcode">${C.colorCode(x.tone, x.reflet)}</span></button>`).join('')}</div><span class="label" style="margin-top:8px">${t('tonesSheet')}</span>` : '') + `<div class="grid3">${C.TONES.filter(x => !hidden('tone:' + x.id) || x.id === sheet.sel).map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${swatchCss(x.id)}"></i>${esc(lab(x))}</button>`).join('')}</div>`;
   } else if (sheet.kind === 'reflet') {
     const tone = S.colors[sheet.i].tone; title = t('refletSheet'); sub = t('refletSheetSub', { tone: tone + ' · ' + lab(C.TONES.find(x => x.id === tone)) });
     body = `<div class="grid3">${C.REFLETS.filter(x => !hidden('reflet:' + x.id) || x.id === sheet.sel).map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${swatchCss(tone, x.id)}"></i>${esc(lab(x))}</button>`).join('')}</div>`;
@@ -292,12 +293,11 @@ function sheetHtml() {
     body = opts.map(o => { const okk = C.isAllowed(f, o, cut); return `<button class="opt" data-a="pick" data-v="${o.id}" aria-pressed="${sheet.sel === o.id}" ${okk ? '' : 'disabled'}><span class="grow"><strong>${esc(lab(o))}</strong><span class="muted">${esc(okk ? des(o) : t('incompatible'))}</span></span><span class="radio ${sheet.sel === o.id ? 'on' : ''}"></span></button>`; }).join('');
   } else if (sheet.kind === 'customColor') {
     title = sheet.id ? t('editColor') : t('newColor');
-    const tiles = (f, list, none) => `<div class="minigrid">${none ? `<button class="mtile none" data-a="ccPick" data-f="${f}" data-v="" aria-pressed="${sheet[f] == null}">${t('noneOpt')}</button>` : ''}${list.map(x => `<button class="mtile" data-a="ccPick" data-f="${f}" data-v="${x.id}" aria-pressed="${sheet[f] === x.id}"><i style="background:${f === 'tone' ? swatchCss(x.id) : swatchCss(sheet.tone || 7, x.id)}"></i><span>${f === 'tone' ? x.id : '.' + x.id}</span></button>`).join('')}</div>`;
+    const tiles = (f, list) => `<div class="minigrid">${list.map(x => `<button class="mtile" data-a="ccPick" data-f="${f}" data-v="${x.id}" aria-pressed="${sheet[f] === x.id}"><i style="background:${f === 'tone' ? swatchCss(x.id) : swatchCss(sheet.tone || 7, x.id)}"></i><span>${f === 'tone' ? x.id : '.' + x.id}</span></button>`).join('')}</div>`;
     body = `<label class="field" for="cc-name"><span class="label">${t('cName')}<span class="req" aria-hidden="true"> *</span></span><input class="input" id="cc-name" data-sheet="name" value="${esc(sheet.name)}" placeholder="${esc(t('cNamePh'))}" autocomplete="off"></label>
-      <div class="ccprev"><span class="sw" style="background:${sheet.tone ? swatchCss(sheet.tone, sheet.reflet, sheet.reflet2) : 'var(--line)'}"></span><span class="grow"><strong>${sheet.tone ? C.colorCode(sheet.tone, sheet.reflet, sheet.reflet2) : '–'}</strong><span class="muted">${sheet.tone ? esc(lab(C.TONES.find(x => x.id === sheet.tone)) + (sheet.reflet ? ' · ' + lab(C.REFLETS.find(x => x.id === sheet.reflet)).toLowerCase() : '') + (sheet.reflet2 != null && sheet.reflet2 !== sheet.reflet ? ' · ' + lab(C.REFLETS.find(x => x.id === sheet.reflet2)).toLowerCase() : '')) : t('cTone')}</span></span></div>
+      <div class="ccprev"><span class="sw" style="background:${sheet.tone ? swatchCss(sheet.tone, sheet.reflet) : 'var(--line)'}"></span><span class="grow"><strong>${sheet.tone ? C.colorCode(sheet.tone, sheet.reflet) : '–'}</strong><span class="muted">${sheet.tone ? esc(lab(C.TONES.find(x => x.id === sheet.tone)) + (sheet.reflet ? ' · ' + lab(C.REFLETS.find(x => x.id === sheet.reflet)).toLowerCase() : '')) : t('cTone')}</span></span></div>
       <span class="label">${t('cTone')}<span class="req" aria-hidden="true"> *</span></span>${tiles('tone', C.TONES)}
-      <span class="label">${t('cR1')}</span>${tiles('reflet', C.REFLETS)}
-      <span class="label">${t('cR2')} · ${t('optionalTag')}</span>${tiles('reflet2', C.REFLETS.filter(x => x.id), true)}`;
+      <span class="label">${t('cR1')}</span>${tiles('reflet', C.REFLETS)}`;
     btn = pbtn(t('saveBtn'), 'ccSave', !!(sheet.name.trim() && sheet.tone)) + (sheet.id ? `<button class="btn ghost danger" data-a="customDelete">${t('deleteBtn')}</button>` : '');
   } else if (sheet.kind === 'customCut') {
     title = sheet.id ? t('editCut') : t('newCut'); sub = sheet.set === 'f' ? t('cutsF') : t('cutsH');
@@ -318,7 +318,7 @@ const cutDone = cut => C.CUT_SETS[S.cutSet].every(f => !f.required || cut[f.key]
 const opt = (cut, key) => { const f = C.CUT_SETS[S.cutSet].find(x => x.key === key); return f && cut[key] ? f.options.find(o => o.id === cut[key]) : null; };
 function cutTitle(cut) { if (S.cutSet === 'f') { const a = opt(cut, 'shape'), b = opt(cut, 'length'); return [a, b].filter(Boolean).map(lab).join(' · '); } const a = opt(cut, 'style'), b = opt(cut, 'top'); return [a, b].filter(Boolean).map(lab).join(' · '); }
 function cutSub(cut) { const o = opt(cut, S.cutSet === 'f' ? 'fringe' : 'sides'); return o ? lab(o) : ''; }
-function colorTitle(c) { if (c.custom) return `${c.name} · ${C.colorCode(c.tone, c.reflet, c.reflet2)}`; const tn = C.TONES.find(x => x.id === c.tone); const rf = C.REFLETS.find(x => x.id === (c.reflet ?? 0)); return `${c.tone}.${c.reflet ?? 0} · ${lab(tn)}${rf.id ? ' ' + lab(rf).toLowerCase() : ''}`; }
+function colorTitle(c) { if (c.custom) return `${c.name} · ${C.colorCode(c.tone, c.reflet)}`; const tn = C.TONES.find(x => x.id === c.tone); const rf = C.REFLETS.find(x => x.id === (c.reflet ?? 0)); return `${c.tone}.${c.reflet ?? 0} · ${lab(tn)}${rf.id ? ' ' + lab(rf).toLowerCase() : ''}`; }
 function colorNote(c) { const rf = C.REFLETS.find(x => x.id === (c.reflet ?? 0)); return t(rf.temp === 'warm' ? 'warmNote' : rf.temp === 'cold' ? 'coldNote' : 'neutralNote'); }
 function infoOf(v) {
   if (v.cut && v.color) return { title: cutTitle(v.cut), sub: colorTitle(v.color), dot: `background:${colorSw(v.color)}` };
@@ -340,7 +340,7 @@ async function computeRenders() {
       if (preset) { base = await E.canvasFromUrl(preset.photo); mask = await E.maskFromUrl(preset.mask, base.width, base.height); demoUsed = true; }
       else cutPending = true;
     }
-    if (color && mask) base = E.recolor(base, mask, color.tone, color.reflet ?? 0, 0.92, color.reflet2 ?? null);
+    if (color && mask) base = E.recolor(base, mask, color.tone, color.reflet ?? 0);
     out.push({ url: base.toDataURL('image/jpeg', 0.9), canvas: base, cut, color, demoUsed, cutPending });
   }
   return out;
@@ -468,11 +468,11 @@ const A = {
   cutSheet: d => { sheet = { kind: 'cut', i: +d.i, k: d.k, sel: S.cuts[+d.i][d.k] ?? null }; render(); },
   toneSheet: d => { const c = S.colors[+d.i]; sheet = { kind: 'tone', i: +d.i, sel: c.custom || (c.tone ?? null) }; render(); },
   refletSheet: d => { sheet = { kind: 'reflet', i: +d.i, sel: S.colors[+d.i].reflet ?? null }; render(); },
-  newColor: () => { sheet = { kind: 'customColor', id: null, name: '', tone: null, reflet: 0, reflet2: null }; render(); },
-  editColor: d => { const x = store.custom.colors.find(y => y.id === d.id); sheet = { kind: 'customColor', id: x.id, name: x.name, tone: x.tone, reflet: x.reflet ?? 0, reflet2: x.reflet2 ?? null }; render(); },
-  ccPick: d => { sheet[d.f] = d.v === '' ? null : +d.v; if (sheet.reflet2 === sheet.reflet) sheet.reflet2 = null; render(); },
+  newColor: () => { sheet = { kind: 'customColor', id: null, name: '', tone: null, reflet: 0 }; render(); },
+  editColor: d => { const x = store.custom.colors.find(y => y.id === d.id); sheet = { kind: 'customColor', id: x.id, name: x.name, tone: x.tone, reflet: x.reflet ?? 0 }; render(); },
+  ccPick: d => { sheet[d.f] = +d.v; render(); },
   ccSave: () => {
-    const v = { name: sheet.name.trim(), tone: sheet.tone, reflet: sheet.reflet ?? 0, reflet2: sheet.reflet2 ?? null };
+    const v = { name: sheet.name.trim(), tone: sheet.tone, reflet: sheet.reflet ?? 0 };
     if (sheet.id) Object.assign(store.custom.colors.find(y => y.id === sheet.id), v); else store.custom.colors.push({ id: uid(), ...v });
     save(); sheet = null; toast(t('savedItem'));
   },
@@ -493,7 +493,7 @@ const A = {
   sheetOk: () => {
     if (sheet.kind === 'tone') {
       const mine = typeof sheet.sel === 'string' && store.custom.colors.find(x => x.id === sheet.sel);
-      if (mine) S.colors[sheet.i] = { custom: mine.id, name: mine.name, tone: mine.tone, reflet: mine.reflet ?? 0, reflet2: mine.reflet2 ?? null };
+      if (mine) S.colors[sheet.i] = { custom: mine.id, name: mine.name, tone: mine.tone, reflet: mine.reflet ?? 0 };
       else { const prev = S.colors[sheet.i]; S.colors[sheet.i] = prev.custom ? { tone: sheet.sel } : Object.assign(prev, { tone: sheet.sel }); }
     }
     else if (sheet.kind === 'reflet') { S.colors[sheet.i].reflet = sheet.sel; }

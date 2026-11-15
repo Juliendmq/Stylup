@@ -107,12 +107,9 @@ export const findOpt = (set, key, id) => CUT_SETS[set].find(f => f.key === key).
 // ---------- couleurs ----------
 const hex2rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 export const rgb2hex = c => '#' + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
-// reflet2 = reflet secondaire facultatif (ex. 7.43 : reflet cuivré dominant, doré en second), pèse 1/3
-export function colorOf(toneId, refletId = 0, reflet2 = null) {
+export function colorOf(toneId, refletId = 0) {
   const base = hex2rgb(TONES.find(t => t.id === toneId).hex);
-  let r = REFLETS.find(x => x.id === refletId) || REFLETS[0];
-  const r2 = reflet2 != null && reflet2 !== refletId ? REFLETS.find(x => x.id === reflet2) : null;
-  if (r2) r = { temp: r.id ? r.temp : r2.temp, k: r.k.map((v, i) => v * 2 / 3 + r2.k[i] / 3), desat: r.desat * 2 / 3 + r2.desat / 3 };
+  const r = REFLETS.find(x => x.id === refletId) || REFLETS[0];
   let c = base.map((v, i) => v * r.k[i]);
   const g = (c[0] + c[1] + c[2]) / 3;
   c = c.map(v => v + (g - v) * r.desat);
@@ -138,5 +135,5 @@ export function applyCustomCuts(cuts) {
     })));
   }
 }
-// Code coloriste d'une couleur : hauteur.reflet(s), ex. 7.43
-export const colorCode = (tone, r1 = 0, r2 = null) => `${tone}.${r1 ?? 0}${r2 != null && r2 !== r1 ? r2 : ''}`;
+// Code coloriste d'une couleur : hauteur.reflet, ex. 7.4
+export const colorCode = (tone, r1 = 0) => `${tone}.${r1 ?? 0}`;
