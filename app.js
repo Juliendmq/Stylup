@@ -1,7 +1,7 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151301';
-import * as C from './catalog.js?v=202611151301';
-import * as E from './engine.js?v=202611151301';
+import { STR } from './i18n.js?v=202611151303';
+import * as C from './catalog.js?v=202611151303';
+import * as E from './engine.js?v=202611151303';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -102,12 +102,12 @@ const SCREENS = {
   },
 
   salonSetup: () => {
-    const card = (k, name, sub, dis) => { const on = F.trade === k; return `<button class="trade ${on ? 'on' : ''}" data-a="trade" data-v="${k}" role="radio" aria-checked="${on}" ${dis ? 'disabled' : ''}><span class="grow"><img src="assets/trade-${k}.svg" alt="" width="32" height="32"><strong>${t(name)}</strong><span class="muted">${dis ? t('soon') : t(sub)}</span></span><span class="radio ${on ? 'on' : ''}"></span></button>`; };
+    const card = (k, name, sub, dis) => { const on = F.trade === k; return `<button class="trade ${on ? 'on' : ''}" data-a="trade" data-v="${k}" role="radio" aria-checked="${on}" ${dis ? 'disabled' : ''}><span class="grow"><img src="assets/trade-${k}.svg" alt="" width="32" height="32"><span class="trade-name">${t(name)}</span><span class="muted">${dis ? t('soon') : t(sub)}</span></span><span class="radio ${on ? 'on' : ''}"></span></button>`; };
     return `<div class="screen">${top(t('salonTitle'))}<main class="main">
     ${fieldIn('first', t('yourFirst'), 'text', { ac: 'given-name', req: true })}
     ${fieldIn('salon', t('salonName'), 'text', { ac: 'organization', req: true })}
     ${fieldIn('city', t('city'), 'text', { ac: 'address-level2', req: true })}
-    <div class="field" role="radiogroup" aria-label="${t('yourTrade')}"><span class="label">${t('yourTrade')}<span class="req" aria-hidden="true"> *</span></span>${card('hair', 'tradeHair', 'tradeHairSub')}${card('nails', 'tradeNails', 'tradeNailsSub', true)}${card('lashes', 'tradeLashes', 'tradeLashesSub', true)}</div>
+    <div class="field" role="radiogroup" aria-label="${t('yourTrade')}"><span class="label">${t('yourTrade')}</span>${card('hair', 'tradeHair', 'tradeHairSub')}${card('nails', 'tradeNails', 'tradeNailsSub')}${card('lashes', 'tradeLashes', 'tradeLashesSub')}</div>
     </main>${authFoot(pbtn(t('done'), 'salonOk', READY.salonSetup()))}</div>`;
   },
 
