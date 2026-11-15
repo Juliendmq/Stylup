@@ -1,7 +1,7 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151303';
-import * as C from './catalog.js?v=202611151303';
-import * as E from './engine.js?v=202611151303';
+import { STR } from './i18n.js?v=202611151305';
+import * as C from './catalog.js?v=202611151305';
+import * as E from './engine.js?v=202611151305';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -107,7 +107,7 @@ const SCREENS = {
     ${fieldIn('first', t('yourFirst'), 'text', { ac: 'given-name', req: true })}
     ${fieldIn('salon', t('salonName'), 'text', { ac: 'organization', req: true })}
     ${fieldIn('city', t('city'), 'text', { ac: 'address-level2', req: true })}
-    <div class="field" role="radiogroup" aria-label="${t('yourTrade')}"><span class="label">${t('yourTrade')}</span>${card('hair', 'tradeHair', 'tradeHairSub')}${card('nails', 'tradeNails', 'tradeNailsSub')}${card('lashes', 'tradeLashes', 'tradeLashesSub')}</div>
+    <div class="field" role="radiogroup" aria-label="${t('yourTrade')}"><span class="label">${t('yourTrade')}<span class="req" aria-hidden="true"> *</span></span>${card('hair', 'tradeHair', 'tradeHairSub')}${card('nails', 'tradeNails', 'tradeNailsSub')}${card('lashes', 'tradeLashes', 'tradeLashesSub')}</div>
     </main>${authFoot(pbtn(t('done'), 'salonOk', READY.salonSetup()))}</div>`;
   },
 
