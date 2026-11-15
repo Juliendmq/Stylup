@@ -193,3 +193,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .flag { font-size: 1.15em; line-height: 1; }
 .pill { display: inline-flex; align-items: center; gap: 6px; }
 .chev-s { display: inline-grid; margin-left: -2px; opacity: .8; }
+.pill.langsq { width: 52px; height: 52px; min-width: 0; padding: 0; flex-direction: column; justify-content: center; gap: 2px; border-radius: 12px; flex: none; }
+.langsq .flag { font-size: 20px; }
+.langsq .lang-code { display: inline-flex; align-items: center; gap: 1px; font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+.langsq .chev-s { margin-left: 0; }
