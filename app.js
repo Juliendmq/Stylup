@@ -61,9 +61,9 @@ const SCREENS = {
     ${fieldIn('pass', t('password'), 'password', { ac: 'new-password', hint: t('passHint') })}
     ${formErr()}<div class="divider"><span>${t('or')}</span></div>
     <button class="btn ghost" data-a="google">${t('google')}</button>
-    <p class="muted" style="margin:0">${t('legal')}</p>
+    <hr class="sep">
     <p class="rowlink">${t('splashLogin')} <button class="link" data-a="toLogin">${t('loginBtn')}</button></p>
-    </main>${authFoot(pbtn(t('cont'), 'signupOk'))}</div>`,
+    </main>${authFoot(pbtn(t('cont'), 'signupOk'), `<p class="legal">${t('legal')}</p>`)}</div>`,
 
   verify: () => {
     const left = Math.max(0, Math.ceil(((F.resendAt || 0) - Date.now()) / 1000));

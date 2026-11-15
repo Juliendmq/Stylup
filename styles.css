@@ -157,7 +157,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .splash-logo { margin: 0; position: absolute; top: 80px; left: 0; right: 0; display: flex; justify-content: center; }
 .splash-foot { margin-top: auto; }
 .splash-logo img { width: 68%; max-width: 266px; height: auto; filter: drop-shadow(0 6px 24px rgba(0,0,0,.25)); }
-.splash-foot { padding: 0 24px calc(24px + var(--safe-b)); display: flex; flex-direction: column; gap: 16px; }
+.splash-foot { padding: 0 24px max(24px, var(--safe-b)); display: flex; flex-direction: column; gap: 16px; }
 .splash-foot .btn.ghost { border-color: rgba(244,238,242,.35); background: rgba(23,18,28,.25); }
 .toast { position: absolute; left: 16px; right: 16px; bottom: calc(96px + var(--safe-b)); z-index: 30; background: var(--text); color: var(--bg); border-radius: 12px; padding: 12px 14px; font-weight: 500; animation: up .2s ease-out; }
 @keyframes up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -173,7 +173,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .input.invalid { border-color: var(--bad); }
 .err { color: var(--bad); font-size: 13px; }
 .hint { color: var(--muted); font-size: 13px; }
-.divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 11px; letter-spacing: .08em; }
+.divider { margin: 8px 0; display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 11px; letter-spacing: .08em; }
 .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .note { margin: 0; background: color-mix(in srgb, var(--warn) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); color: var(--warn); border-radius: 12px; padding: 10px 12px; font-size: 13px; }
 .codein { font-size: 28px; letter-spacing: .5em; text-align: center; font-variant-numeric: tabular-nums; padding-left: calc(14px + .5em); }
@@ -193,3 +193,6 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .flag { font-size: 1.15em; line-height: 1; }
 .pill { display: inline-flex; align-items: center; gap: 6px; }
 .chev-s { display: inline-grid; margin-left: -2px; opacity: .8; }
+
+.sep { border: 0; height: 1px; background: var(--line); margin: 8px 0 0; }
+.legal { margin: 0; text-align: center; font-size: 12px; line-height: 1.45; color: var(--muted); }
