@@ -1,7 +1,7 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151318';
-import * as C from './catalog.js?v=202611151318';
-import * as E from './engine.js?v=202611151318';
+import { STR } from './i18n.js?v=202611151322';
+import * as C from './catalog.js?v=202611151322';
+import * as E from './engine.js?v=202611151322';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -494,13 +494,20 @@ $app.addEventListener('change', async e => {
   if (k === 'photo') await setPhoto(c, false, null); else { S.after = E.thumb(c, 360, 0.8); render(); }
 });
 
+let lastRoute = null, lastSheet = null;
 function render() {
   document.documentElement.lang = store.lang;
   if (!S && !['splash', 'home', 'catalog', 'settings', 'session', 'signup', 'verify', 'salonSetup', 'login', 'forgot', 'forgotSent', 'reset'].includes(route.name)) route = { name: store.loggedIn ? 'home' : 'splash' };
   const html = (SCREENS[route.name] || SCREENS.home)();
   const oldVid = $app.querySelector('.splash-video');
+  // Même écran (et même panneau) qu'avant : on garde la position de défilement au lieu de remonter en haut
+  const sameScreen = route === lastRoute, sameSheet = sameScreen && sheet && lastSheet && sheet.kind === lastSheet;
+  const mainY = sameScreen ? $app.querySelector('.main')?.scrollTop : 0, sheetY = sameSheet ? $app.querySelector('.sheet .body')?.scrollTop : 0;
   $app.innerHTML = html + sheetHtml() + (toastMsg ? `<div class="toast" role="status">${esc(toastMsg)}</div>` : '');
   const newVid = $app.querySelector('.splash-video'); if (oldVid && newVid) newVid.replaceWith(oldVid); // la vidéo continue au lieu de repartir du début
+  if (mainY) { const m = $app.querySelector('.main'); if (m) m.scrollTop = mainY; }
+  if (sheetY) { const b = $app.querySelector('.sheet .body'); if (b) b.scrollTop = sheetY; }
+  lastRoute = route; lastSheet = sheet ? sheet.kind : null;
   if (route.name === 'brush') mountBrush();
   const v = $app.querySelector('.splash-video'); if (v) { if (matchMedia('(prefers-reduced-motion: reduce)').matches) v.pause(); else v.play().catch(() => {}); }
 }
