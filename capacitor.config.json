@@ -1,0 +1,8 @@
+{
+  "appId": "app.stylup.proto",
+  "appName": "Stylup",
+  "webDir": "www",
+  "backgroundColor": "#17121c",
+  "android": { "allowMixedContent": false },
+  "ios": { "contentInset": "never", "backgroundColor": "#17121c" }
+}

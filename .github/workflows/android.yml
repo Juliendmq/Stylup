@@ -1,0 +1,47 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Installer les dépendances
+        run: npm ci
+      - name: Préparer l'application web et le projet Android
+        run: npm run build && npx cap sync android
+      - name: Compiler l'APK
+        working-directory: android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - run: cp android/app/build/outputs/apk/debug/app-debug.apk Stylup.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Stylup-android
+          path: Stylup.apk
+      - name: Publier la version de test
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-test --yes --cleanup-tag || true
+          gh release create android-test Stylup.apk --prerelease \
+            --title "Stylup Android (version de test)" \
+            --notes "APK de test compilé automatiquement depuis main (${GITHUB_SHA::7}). À installer sur Android en autorisant les sources inconnues."
