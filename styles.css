@@ -182,7 +182,19 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .divider { margin: 8px 0; display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 11px; letter-spacing: .08em; }
 .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .note { margin: 0; background: color-mix(in srgb, var(--warn) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); color: var(--warn); border-radius: 12px; padding: 10px 12px; font-size: 13px; }
-.codein { font-size: 28px; letter-spacing: .5em; text-align: center; font-variant-numeric: tabular-nums; padding-left: calc(14px + .5em); }
+/* Code à 6 chiffres : 6 cases (3 + 3), le vrai champ invisible par-dessus reçoit la saisie */
+.otp { position: relative; }
+.otp-in { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; font-size: 16px; z-index: 1; cursor: text; }
+.otp-boxes { display: flex; align-items: center; gap: 8px; }
+.otp-box { flex: 1; min-width: 0; height: 58px; display: grid; place-items: center; background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+  font-family: var(--display); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text);
+  transition: background-color .15s ease, border-color .15s ease; }
+.otp-box.on { background: var(--panel); }
+.otp.focus .otp-box.cur { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.otp.focus .otp-box.cur:not(.on)::after { content: ""; width: 2px; height: 26px; background: var(--accent); border-radius: 1px; animation: otp-caret 1s steps(1) infinite; }
+.otp-sep { flex: 0 0 10px; height: 2px; border-radius: 1px; background: var(--line); }
+.otp.invalid .otp-box { border-color: var(--bad); }
+@keyframes otp-caret { 50% { opacity: 0; } }
 .hero { display: flex; flex-direction: column; gap: 6px; }
 .hero h2 { font-family: var(--display); font-size: 24px; font-weight: 700; margin: 0; text-wrap: balance; }
 .hero p { margin: 0; }

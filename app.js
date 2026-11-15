@@ -46,6 +46,29 @@ const fieldIn = (key, label, type = 'text', o = {}) => {
   const body = type === 'password' ? `<div class="pw">${input}<button type="button" class="eye" data-eye="f-${key}" aria-label="${t('show')}">${svg('eye')}</button></div>` : input;
   return `<label class="field" for="f-${key}"><span class="label">${esc(label)}</span>${body}${err ? `<span class="err">${esc(err)}</span>` : o.hint ? `<span class="hint">${esc(o.hint)}</span>` : ''}</label>`;
 };
+// Code de confirmation à 6 chiffres : un vrai champ (clavier numérique, remplissage auto du code reçu, collage)
+// posé sur 6 cases visuelles groupées 3 + 3.
+const otpDigits = v => (v || '').replace(/\D/g, '').slice(0, 6);
+const otpField = () => {
+  const err = F.err && F.err.code, v = otpDigits(F.code);
+  const box = i => `<span class="otp-box${v[i] ? ' on' : ''}${i === Math.min(v.length, 5) ? ' cur' : ''}">${v[i] || ''}</span>`;
+  return `<div class="field"><label class="label" for="f-code">${t('code')}</label>
+    <div class="otp${err ? ' invalid' : ''}"><input class="otp-in" id="f-code" data-f="code" data-otp type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" value="${v}" ${err ? 'aria-invalid="true"' : ''}>
+    <div class="otp-boxes" aria-hidden="true">${box(0)}${box(1)}${box(2)}<span class="otp-sep"></span>${box(3)}${box(4)}${box(5)}</div></div>
+    ${err ? `<span class="err">${esc(err)}</span>` : ''}</div>`;
+};
+const otpPaint = inp => {
+  const v = otpDigits(inp.value); if (inp.value !== v) inp.value = v; F.code = v;
+  const wrap = inp.closest('.otp'); wrap.classList.remove('invalid'); inp.removeAttribute('aria-invalid');
+  if (F.err) delete F.err.code; wrap.parentElement.querySelector('.err')?.remove();
+  wrap.querySelectorAll('.otp-box').forEach((b, i) => { b.textContent = v[i] || ''; b.classList.toggle('on', !!v[i]); b.classList.toggle('cur', i === Math.min(v.length, 5)); });
+};
+// PROTOTYPE UNIQUEMENT : aucun e-mail n'est envoyé, donc toucher le champ y « reçoit » le code fictif 123456, chiffre par chiffre.
+let otpDemoTimer = 0;
+const otpDemoFill = inp => {
+  if (inp.value || otpDemoTimer) return;
+  let i = 0; otpDemoTimer = setInterval(() => { inp.value = '123456'.slice(0, ++i); otpPaint(inp); if (i >= 6) { clearInterval(otpDemoTimer); otpDemoTimer = 0; } }, 70);
+};
 const formErr = () => F.err && F.err.form ? `<p class="err" role="alert" style="margin:0">${esc(F.err.form)}</p>` : '';
 const authFoot = (primary, extra = '') => `<footer class="foot">${primary}${extra}</footer>`;
 const langPill = () => `<button class="pill" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog">${langLabel(store.lang)}<span class="chev-s">${svg('down', 14)}</span></button>`;
@@ -68,8 +91,7 @@ const SCREENS = {
   verify: () => {
     const left = Math.max(0, Math.ceil(((F.resendAt || 0) - Date.now()) / 1000));
     return `<div class="screen">${top(t('verifyTitle'))}<main class="main"><div class="hero"><h2>${t('verifyHead')}</h2><p class="muted">${t('verifySub', { email: esc(F.email) })}</p></div>
-    ${fieldIn('code', t('code'), 'text', { im: 'numeric', max: 6, ac: 'one-time-code', cls: 'codein' })}
-    <p class="note">${t('demoCode')}</p>
+    ${otpField()}
     <button class="link" data-a="resend" id="resendBtn" ${left ? 'disabled' : ''}>${left ? t('resendIn', { n: left }) : t('resend')}</button>
     <button class="link" data-a="changeEmail">${t('changeEmail')}</button>
     </main>${authFoot(pbtn(t('confirmBtn'), 'verifyOk'))}</div>`;
@@ -444,7 +466,10 @@ const A = {
 
 $app.addEventListener('click', e => { const eye = e.target.closest('[data-eye]'); if (eye) { e.preventDefault(); const inp = document.getElementById(eye.dataset.eye); inp.type = inp.type === 'password' ? 'text' : 'password'; eye.setAttribute('aria-label', inp.type === 'password' ? t('show') : t('hide')); eye.classList.toggle('on', inp.type === 'text'); return; } const el = e.target.closest('[data-a]'); if (!el || el.disabled) return; if (el.dataset.a === 'closeSheet' && el.classList.contains('sheet')) return; const f = A[el.dataset.a]; if (f) { e.preventDefault(); f(el.dataset, el); } });
 $app.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.f) { e.preventDefault(); $app.querySelector('.foot .btn.primary')?.click(); } });
-$app.addEventListener('input', e => { if (e.target.dataset.f) { const k = e.target.dataset.f; F[k] = e.target.value; if (F.err && (F.err[k] || F.err.form)) { delete F.err[k]; delete F.err.form; e.target.classList.remove('invalid'); e.target.removeAttribute('aria-invalid'); e.target.closest('.field')?.querySelector('.err')?.remove(); $app.querySelector('p.err[role=alert]')?.remove(); } return; } const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'pro') { store.pro = e.target.value || 'Karine'; save(); } else if (k === 'brushSize') route.size = +e.target.value; });
+$app.addEventListener('input', e => { if (e.target.dataset.otp !== undefined) otpPaint(e.target); if (e.target.dataset.f) { const k = e.target.dataset.f; F[k] = e.target.value; if (F.err && (F.err[k] || F.err.form)) { delete F.err[k]; delete F.err.form; e.target.classList.remove('invalid'); e.target.removeAttribute('aria-invalid'); e.target.closest('.field')?.querySelector('.err')?.remove(); $app.querySelector('p.err[role=alert]')?.remove(); } return; } const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'pro') { store.pro = e.target.value || 'Karine'; save(); } else if (k === 'brushSize') route.size = +e.target.value; });
+$app.addEventListener('focusin', e => { if (e.target.dataset.otp !== undefined) e.target.closest('.otp').classList.add('focus'); });
+$app.addEventListener('focusout', e => { if (e.target.dataset.otp !== undefined) e.target.closest('.otp').classList.remove('focus'); });
+$app.addEventListener('click', e => { if (e.target.dataset.otp !== undefined) otpDemoFill(e.target); });
 $app.addEventListener('change', async e => {
   const k = e.target.dataset.file; if (!k) return; const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
   const c = await E.photoFromFile(f);
