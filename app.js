@@ -42,7 +42,7 @@ const pbtn = (label, action, enabled = true, data = '') => `<button class="btn p
 const tabbar = cur => `<nav class="tabs-bar">${[['home', 'tabSessions'], ['catalog', 'tabCatalog'], ['settings', 'tabSettings']].map(([r, k]) => `<button data-a="tab" data-r="${r}" aria-current="${cur === r}"><i></i>${t(k)}</button>`).join('')}</nav>`;
 const fieldIn = (key, label, type = 'text', o = {}) => {
   const err = F.err && F.err[key];
-  const input = `<input class="input ${o.cls || ''} ${err ? 'invalid' : ''}" id="f-${key}" data-f="${key}" type="${type}" value="${esc(F[key] || '')}" ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} autocomplete="${o.ac || 'off'}" ${o.im ? `inputmode="${o.im}"` : ''} ${o.max ? `maxlength="${o.max}"` : ''} autocapitalize="off" spellcheck="false" ${err ? 'aria-invalid="true"' : ''}>`;
+  const input = `<input class="input ${o.cls || ''} ${err ? 'invalid' : ''}" id="f-${key}" data-f="${key}" type="${type}" value="${esc(F[key] || '')}" placeholder="${esc(o.ph || ' ')}" autocomplete="${o.ac || 'off'}" ${o.im ? `inputmode="${o.im}"` : ''} ${o.max ? `maxlength="${o.max}"` : ''} autocapitalize="off" spellcheck="false" ${err ? 'aria-invalid="true"' : ''}>`;
   const body = type === 'password' ? `<div class="pw">${input}<button type="button" class="eye" data-eye="f-${key}" aria-label="${t('show')}">${svg('eye')}</button></div>` : input;
   return `<label class="field" for="f-${key}"><span class="label">${esc(label)}</span>${body}${err ? `<span class="err">${esc(err)}</span>` : o.hint ? `<span class="hint">${esc(o.hint)}</span>` : ''}</label>`;
 };
@@ -217,7 +217,7 @@ const SCREENS = {
   },
 
   settings: () => `<div class="screen">${top(t('settingsTitle'), { noBack: true, big: true })}<main class="main">
-    <label class="field"><span class="label">${t('proName')}</span><input class="input" data-in="pro" value="${esc(store.pro)}" autocomplete="off"></label>
+    <label class="field"><span class="label">${t('proName')}</span><input class="input" data-in="pro" value="${esc(store.pro)}" placeholder=" " autocomplete="off"></label>
     <div class="field"><span class="label">${t('language')}</span><div class="chips">${C.LANGS.map(l => `<button data-a="setLang" data-l="${l}" aria-pressed="${store.lang === l}">${langLabel(l)}</button>`).join('')}</div></div>
     <section class="card"><h3>${t('hairAuto')}</h3><span class="muted">${autoState === null ? t('checking') : autoState ? t('available') : t('unavailable')}</span><h3 style="margin-top:6px">${t('cutService')}</h3><span class="muted">${t('notConnected')}</span></section>
     ${store.account ? `<section class="card"><h3>${t('account')}</h3><span class="muted">${esc(store.account.email)}${store.account.salon ? ' · ' + esc(store.account.salon) : ''}</span><button class="btn ghost small" data-a="logout">${t('logout')}</button></section>` : ''}

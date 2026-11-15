@@ -46,6 +46,10 @@ button { cursor: pointer; }
 .field.off { opacity: .35; pointer-events: none; }
 .input { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; font-size: 16px; }
 .input::placeholder { color: #7d7186; }
+/* Champ en cours de saisie ou rempli : fond panneau, comme dans Figma (02 Créer un compte) */
+.input { transition: background-color .15s ease, border-color .15s ease; }
+.input:focus, .input:not(:placeholder-shown) { background: var(--panel); }
+.input:focus { outline: none; border-color: #5a4a68; }
 /* boutons */
 .btn { width: 100%; border-radius: 999px; padding: 15px 18px; font-weight: 600; font-size: 16px; border: 1px solid transparent; text-align: center; }
 .btn.primary { background: var(--accent); color: var(--accent-ink); }
