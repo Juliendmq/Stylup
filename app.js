@@ -93,7 +93,6 @@ const SCREENS = {
     return `<div class="screen">${top(t('verifyTitle'))}<main class="main"><div class="hero"><h2>${t('verifyHead')}</h2><p class="muted">${t('verifySub', { email: esc(F.email) })}</p></div>
     ${otpField()}
     <button class="link" data-a="resend" id="resendBtn" ${left ? 'disabled' : ''}>${left ? t('resendIn', { n: left }) : t('resend')}</button>
-    <button class="link" data-a="changeEmail">${t('changeEmail')}</button>
     </main>${authFoot(pbtn(t('confirmBtn'), 'verifyOk'))}</div>`;
   },
 
@@ -362,7 +361,6 @@ const A = {
     F = { email, code: '', resendAt: Date.now() + 30000 }; go('verify');
   },
   resend: () => { F.resendAt = Date.now() + 30000; F.err = null; toast(t('resent')); },
-  changeEmail: () => { F = { email: F.email }; stack = [{ name: 'splash' }]; route = { name: 'signup' }; render(); },
   verifyOk: () => {
     if ((F.code || '').replace(/\D/g, '') !== '123456') return fail({ code: t('errCode') });
     store.account.verified = true; save();
