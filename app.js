@@ -1,7 +1,7 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151313';
-import * as C from './catalog.js?v=202611151313';
-import * as E from './engine.js?v=202611151313';
+import { STR } from './i18n.js?v=202611151316';
+import * as C from './catalog.js?v=202611151316';
+import * as E from './engine.js?v=202611151316';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -71,7 +71,6 @@ const otpDemoFill = inp => {
 };
 const formErr = () => F.err && F.err.form ? `<p class="err" role="alert" style="margin:0">${esc(F.err.form)}</p>` : '';
 const authFoot = (primary, extra = '') => `<footer class="foot">${primary}${extra}</footer>`;
-const langPill = () => `<button class="pill" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog">${langLabel(store.lang)}<span class="chev-s">${svg('down', 14)}</span></button>`;
 
 // Écrans dont le bouton principal reste désactivé tant que les champs obligatoires ne sont pas remplis
 const READY = {
@@ -133,7 +132,7 @@ const SCREENS = {
     ${fieldIn('newPass2', t('newPass2'), 'password', { ac: 'new-password' })}
     </main>${authFoot(pbtn(t('savePass'), 'resetOk'))}</div>`,
 
-  home: () => `<div class="screen">${top(t('hello', { name: store.pro }), { noBack: true, big: true, right: langPill() + `<span class="avatar">${esc((store.pro || '?')[0].toUpperCase())}</span>` })}
+  home: () => `<div class="screen">${top(t('hello', { name: store.pro }), { noBack: true, big: true, right: `<span class="avatar">${esc((store.pro || '?')[0].toUpperCase())}</span>` })}
     <main class="main"><section class="card"><h2>${t('newClientTitle')}</h2><p class="muted" style="margin:0">${t('newClientSub')}</p>${pbtn(t('newSession'), 'newSession')}</section>
     ${store.sessions.length ? `<p class="label" style="margin:8px 0 -4px">${t('recent', { n: store.sessions.length })}</p>` + store.sessions.map((s, i) => `<button class="sess" data-a="openSession" data-i="${i}"><img src="${s.thumb}" alt=""><span class="grow"><span><strong>${esc(s.first || t('client'))}</strong> · ${s.svcLabel}</span><span class="muted">${esc(s.title)}</span><span class="muted">${fmtDate(s.date)}</span></span>${svg('right')}</button>`).join('') : `<p class="muted">${t('noSessions')}</p>`}
     </main>${tabbar('home')}</div>`,
@@ -242,13 +241,18 @@ const SCREENS = {
       </main>${tabbar('catalog')}</div>`;
   },
 
-  settings: () => `<div class="screen">${top(t('settingsTitle'), { noBack: true, big: true })}<main class="main">
-    <label class="field"><span class="label">${t('proName')}</span><input class="input" data-in="pro" value="${esc(store.pro)}" placeholder=" " autocomplete="off"></label>
+  settings: () => {
+    const acc = store.account || {};
+    const prof = (k, label, val, ac) => `<label class="field" for="set-${k}"><span class="label">${esc(label)}<span class="req" aria-hidden="true"> *</span></span><input class="input" id="set-${k}" data-set="${k}" value="${esc(val || '')}" placeholder=" " autocomplete="${ac}" required aria-required="true"></label>`;
+    return `<div class="screen">${top(t('settingsTitle'), { noBack: true, big: true })}<main class="main">
+    ${prof('first', t('yourFirst'), acc.first || store.pro, 'given-name')}
+    ${prof('salon', t('salonName'), acc.salon, 'organization')}
+    ${prof('city', t('city'), acc.city, 'address-level2')}
     <div class="field"><span class="label">${t('language')}</span><div class="chips">${C.LANGS.map(l => `<button data-a="setLang" data-l="${l}" aria-pressed="${store.lang === l}">${langLabel(l)}</button>`).join('')}</div></div>
-    <section class="card"><h3>${t('hairAuto')}</h3><span class="muted">${autoState === null ? t('checking') : autoState ? t('available') : t('unavailable')}</span><h3 style="margin-top:6px">${t('cutService')}</h3><span class="muted">${t('notConnected')}</span></section>
-    ${store.account ? `<section class="card"><h3>${t('account')}</h3><span class="muted">${esc(store.account.email)}${store.account.salon ? ' · ' + esc(store.account.salon) : ''}</span><button class="btn ghost small" data-a="logout">${t('logout')}</button></section>` : ''}
     <section class="card"><h3>${t('storage')}</h3><span class="muted">${t('storageSub')}</span><button class="btn ghost small" data-a="clearAll">${t('clearAll')}</button></section>
-    <p class="muted" style="text-align:center">${t('version')}</p></main>${tabbar('settings')}</div>`,
+    ${store.account ? `<section class="card"><h3>${t('account')}</h3><span class="muted">${esc(store.account.email)}</span><button class="btn ghost small" data-a="logout">${t('logout')}</button></section>` : ''}
+    <p class="muted" style="text-align:center">${t('version')}</p></main>${tabbar('settings')}</div>`;
+  },
 };
 
 // ---------- panneaux ----------
@@ -402,7 +406,7 @@ const A = {
     const email = F.sentTo; F = { email }; stack = [{ name: 'splash' }]; route = { name: 'login' }; toast(t('passChanged'));
   },
   logout: () => { store.loggedIn = false; save(); S = null; F = {}; stack = []; route = { name: 'splash' }; render(); },
-  tab: d => { stack = []; route = { name: d.r }; sheet = null; render(); if (d.r === 'settings' && autoState === null) E.autoAvailable().then(v => { autoState = v; render(); }); },
+  tab: d => { stack = []; route = { name: d.r }; sheet = null; render(); },
   langSheet: () => { sheet = { kind: 'lang' }; render(); },
   setLang: d => { store.lang = d.l; save(); if (sheet && sheet.kind === 'lang') sheet = null; render(); },
   newSession: () => { newSession(); go('client'); },
@@ -469,7 +473,15 @@ const A = {
 
 $app.addEventListener('click', e => { const eye = e.target.closest('[data-eye]'); if (eye) { e.preventDefault(); const inp = document.getElementById(eye.dataset.eye); inp.type = inp.type === 'password' ? 'text' : 'password'; eye.setAttribute('aria-label', inp.type === 'password' ? t('show') : t('hide')); eye.classList.toggle('on', inp.type === 'text'); return; } const el = e.target.closest('[data-a]'); if (!el || el.disabled) return; if (el.dataset.a === 'closeSheet' && el.classList.contains('sheet')) return; const f = A[el.dataset.a]; if (f) { e.preventDefault(); f(el.dataset, el); } });
 $app.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.f) { e.preventDefault(); $app.querySelector('.foot .btn.primary')?.click(); } });
-$app.addEventListener('input', e => { if (e.target.dataset.otp !== undefined) otpPaint(e.target); if (e.target.dataset.f) { const k = e.target.dataset.f; F[k] = e.target.value; const ready = READY[route.name], cta = ready && $app.querySelector('.foot .btn.primary'); if (cta) cta.disabled = !ready(); if (F.err && (F.err[k] || F.err.form)) { delete F.err[k]; delete F.err.form; e.target.classList.remove('invalid'); e.target.removeAttribute('aria-invalid'); e.target.closest('.field')?.querySelector('.err')?.remove(); $app.querySelector('p.err[role=alert]')?.remove(); } return; } const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'pro') { const v = e.target.value.trim(); if (v) { store.pro = v; if (store.account) store.account.first = v; save(); } } else if (k === 'brushSize') route.size = +e.target.value; });
+// Réglages : prénom, établissement et ville sont obligatoires ; enregistrés à la frappe, jamais vides
+function saveProfileField(inp) {
+  const k = inp.dataset.set, v = inp.value.trim(), field = inp.closest('.field');
+  field.querySelector('.err')?.remove();
+  if (!v) { inp.classList.add('invalid'); inp.setAttribute('aria-invalid', 'true'); field.insertAdjacentHTML('beforeend', `<span class="err">${esc(t('errRequired'))}</span>`); return; }
+  inp.classList.remove('invalid'); inp.removeAttribute('aria-invalid');
+  store.account = store.account || {}; store.account[k] = v; if (k === 'first') store.pro = v; save();
+}
+$app.addEventListener('input', e => { if (e.target.dataset.set) return saveProfileField(e.target); if (e.target.dataset.otp !== undefined) otpPaint(e.target); if (e.target.dataset.f) { const k = e.target.dataset.f; F[k] = e.target.value; const ready = READY[route.name], cta = ready && $app.querySelector('.foot .btn.primary'); if (cta) cta.disabled = !ready(); if (F.err && (F.err[k] || F.err.form)) { delete F.err[k]; delete F.err.form; e.target.classList.remove('invalid'); e.target.removeAttribute('aria-invalid'); e.target.closest('.field')?.querySelector('.err')?.remove(); $app.querySelector('p.err[role=alert]')?.remove(); } return; } const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'brushSize') route.size = +e.target.value; });
 $app.addEventListener('focusin', e => { if (e.target.dataset.otp !== undefined) e.target.closest('.otp').classList.add('focus'); });
 $app.addEventListener('focusout', e => { if (e.target.dataset.otp !== undefined) e.target.closest('.otp').classList.remove('focus'); });
 $app.addEventListener('click', e => { if (e.target.dataset.otp !== undefined) otpDemoFill(e.target); });
