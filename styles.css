@@ -154,7 +154,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .splash-content { position: relative; height: 100%; display: flex; flex-direction: column; }
 .splash-top { display: flex; justify-content: flex-end; padding: calc(10px + var(--safe-t)) 24px 0; }
 .pill.glass { background: rgba(255,255,255,.1); border-color: rgba(244,238,242,.25); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-.splash-logo { margin: 0; flex: 1; display: flex; justify-content: center; align-items: flex-start; padding-top: max(24px, calc(31vh - 56px - var(--safe-t))); }
+.splash-logo { margin: 0; flex: 1; display: flex; justify-content: center; align-items: flex-start; padding-top: max(24px, calc(19vh - 56px - var(--safe-t))); }
 .splash-logo img { width: 68%; max-width: 266px; height: auto; filter: drop-shadow(0 6px 24px rgba(0,0,0,.25)); }
 .splash-foot { padding: 0 24px calc(24px + var(--safe-b)); display: flex; flex-direction: column; gap: 16px; }
 .splash-foot .btn.ghost { border-color: rgba(244,238,242,.35); background: rgba(23,18,28,.25); }
