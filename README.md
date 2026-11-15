@@ -51,8 +51,7 @@ Nano Banana 2 (Gemini 3.1 Flash Image). La clé Gemini reste dans les secrets Su
 2. Créer une clé dans Google AI Studio, puis dans Supabase › Edge Functions › Secrets : `GEMINI_API_KEY`
    (facultatif : `DAILY_LIMIT`, 200 par défaut).
 3. Exécuter `supabase/migrations/20261115_render_usage.sql` dans Supabase › SQL Editor (plafond quotidien).
-4. Déployer la fonction : via l'action GitHub « Supabase function » (secrets `SUPABASE_ACCESS_TOKEN` et
-   `SUPABASE_PROJECT_REF`), ou `supabase functions deploy render`.
+4. Déployer la fonction : `supabase functions deploy render` (ou via le connecteur Supabase de Claude).
 5. Renseigner `config.js` : l'adresse `https://<projet>.supabase.co/functions/v1/render` et la clé publique `anon`.
 
 Sans configuration, l'app garde le rendu local (couleur) et l'aperçu de démonstration ; `?render=mock` dans
