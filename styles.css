@@ -11,7 +11,9 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; background: #0d0a10; }
 body { font-family: var(--body); color: var(--text); font-size: 15px; line-height: 1.4; -webkit-tap-highlight-color: transparent; }
-button, input { font: inherit; color: inherit; }
+button, input, textarea, select { font: inherit; color: inherit; }
+/* Champs de saisie en 16 px minimum : en dessous, Safari iOS zoome sur la page au focus */
+input, textarea, select { font-size: 16px; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #app { position: relative; max-width: 430px; height: 100%; margin: 0 auto; background: var(--bg); overflow: hidden; }
@@ -42,7 +44,7 @@ button { cursor: pointer; }
 .section { display: flex; flex-direction: column; gap: 12px; }
 .field { display: flex; flex-direction: column; gap: 8px; }
 .field.off { opacity: .35; pointer-events: none; }
-.input { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; font-size: 15px; }
+.input { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; font-size: 16px; }
 .input::placeholder { color: #7d7186; }
 /* boutons */
 .btn { width: 100%; border-radius: 999px; padding: 15px 18px; font-weight: 600; font-size: 16px; border: 1px solid transparent; text-align: center; }
