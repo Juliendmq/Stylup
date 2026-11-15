@@ -148,8 +148,16 @@ input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; poin
 .brushwrap canvas { display: block; width: 100%; height: auto; }
 input[type=range] { width: 100%; accent-color: var(--accent); }
 /* accueil */
-.splash { position: absolute; inset: 0; display: flex; flex-direction: column; background: linear-gradient(180deg, rgba(23,18,28,.15) 0%, rgba(23,18,28,.55) 55%, var(--bg) 100%), url("assets/demo-original.jpg") center 20% / cover; }
-.logo { font-family: var(--display); font-weight: 700; font-size: 72px; letter-spacing: -.03em; line-height: .9; margin: 0; }
+.splash { position: absolute; inset: 0; overflow: hidden; background: var(--bg) url("assets/splash-bg.jpg") center / cover; }
+.splash-video { position: absolute; inset: -24px; width: calc(100% + 48px); height: calc(100% + 48px); object-fit: cover; filter: blur(3px) saturate(1.05); }
+.splash-veil { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(23,18,28,.45) 0%, rgba(23,18,28,.5) 55%, rgba(23,18,28,.82) 100%); }
+.splash-content { position: relative; height: 100%; display: flex; flex-direction: column; }
+.splash-top { display: flex; justify-content: flex-end; padding: calc(10px + var(--safe-t)) 24px 0; }
+.pill.glass { background: rgba(255,255,255,.1); border-color: rgba(244,238,242,.25); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.splash-logo { margin: 0; flex: 1; display: flex; justify-content: center; align-items: flex-start; padding-top: max(24px, calc(31vh - 56px - var(--safe-t))); }
+.splash-logo img { width: 68%; max-width: 266px; height: auto; filter: drop-shadow(0 6px 24px rgba(0,0,0,.25)); }
+.splash-foot { padding: 0 24px calc(24px + var(--safe-b)); display: flex; flex-direction: column; gap: 16px; }
+.splash-foot .btn.ghost { border-color: rgba(244,238,242,.35); background: rgba(23,18,28,.25); }
 .toast { position: absolute; left: 16px; right: 16px; bottom: calc(96px + var(--safe-b)); z-index: 30; background: var(--text); color: var(--bg); border-radius: 12px; padding: 12px 14px; font-weight: 500; animation: up .2s ease-out; }
 @keyframes up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }

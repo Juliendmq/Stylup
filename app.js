@@ -40,8 +40,10 @@ const tabbar = cur => `<nav class="tabs-bar">${[['home', 'tabSessions'], ['catal
 const langPill = () => `<button class="pill" data-a="langSheet" aria-label="${t('language')}">${store.lang.toUpperCase()}</button>`;
 
 const SCREENS = {
-  splash: () => `<div class="splash"><header class="top" style="justify-content:flex-end">${langPill()}</header><div style="flex:1;display:flex;align-items:center;padding:0 28px"><div><p class="logo">Styl<br>up</p><p class="muted" style="margin-top:12px;font-size:15px">${t('newClientSub')}</p></div></div>
-    <footer class="foot">${pbtn(t('splashCreate'), 'start')}<button class="btn ghost" data-a="start">${t('splashLogin')}</button><p class="muted" style="text-align:center;margin:0">${t('proto')}</p></footer></div>`,
+  splash: () => `<div class="splash"><video class="splash-video" autoplay muted loop playsinline preload="auto" poster="assets/splash-bg.jpg" src="assets/splash.mp4" aria-hidden="true"></video><div class="splash-veil"></div>
+    <div class="splash-content"><header class="splash-top"><button class="pill glass" data-a="langSheet" aria-label="${t('language')}">${store.lang.toUpperCase()}</button></header>
+    <h1 class="splash-logo"><img src="assets/stylup-logo.svg" alt="Stylup" width="266" height="155"></h1>
+    <footer class="splash-foot">${pbtn(t('splashCreate'), 'start')}<button class="btn ghost" data-a="start">${t('splashLogin')}</button></footer></div></div>`,
 
   home: () => `<div class="screen">${top(t('hello', { name: store.pro }), { noBack: true, big: true, right: langPill() + `<span class="avatar">${esc((store.pro || '?')[0].toUpperCase())}</span>` })}
     <main class="main"><section class="card"><h2>${t('newClientTitle')}</h2><p class="muted" style="margin:0">${t('newClientSub')}</p>${pbtn(t('newSession'), 'newSession')}</section>
@@ -329,6 +331,7 @@ function render() {
   const html = (SCREENS[route.name] || SCREENS.home)();
   $app.innerHTML = html + sheetHtml() + (toastMsg ? `<div class="toast" role="status">${esc(toastMsg)}</div>` : '');
   if (route.name === 'brush') mountBrush();
+  const v = $app.querySelector('.splash-video'); if (v) { if (matchMedia('(prefers-reduced-motion: reduce)').matches) v.pause(); else v.play().catch(() => {}); }
 }
 render();
 window.__stylup = { get S() { return S; }, get route() { return route; }, A };
