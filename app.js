@@ -48,11 +48,11 @@ const fieldIn = (key, label, type = 'text', o = {}) => {
 };
 const formErr = () => F.err && F.err.form ? `<p class="err" role="alert" style="margin:0">${esc(F.err.form)}</p>` : '';
 const authFoot = (primary, extra = '') => `<footer class="foot">${primary}${extra}</footer>`;
-const langPill = () => `<button class="pill langsq" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog"><span class="flag" aria-hidden="true">${FLAG[store.lang]}</span><span class="lang-code">${store.lang.toUpperCase()}<span class="chev-s">${svg('down', 11)}</span></span></button>`;
+const langPill = () => `<button class="pill" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog">${langLabel(store.lang)}<span class="chev-s">${svg('down', 14)}</span></button>`;
 
 const SCREENS = {
   splash: () => `<div class="splash"><video class="splash-video" autoplay muted loop playsinline preload="auto" poster="assets/splash-bg.jpg" src="assets/splash.mp4" aria-hidden="true"></video><div class="splash-veil"></div>
-    <div class="splash-content"><header class="splash-top"><button class="pill glass langsq" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog"><span class="flag" aria-hidden="true">${FLAG[store.lang]}</span><span class="lang-code">${store.lang.toUpperCase()}<span class="chev-s">${svg('down', 11)}</span></span></button></header>
+    <div class="splash-content"><header class="splash-top"><button class="pill glass" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog">${langLabel(store.lang)}<span class="chev-s">${svg('down', 14)}</span></button></header>
     <h1 class="splash-logo"><img src="assets/stylup-logo.svg" alt="Stylup" width="266" height="155"></h1>
     <footer class="splash-foot">${pbtn(t('splashCreate'), 'toSignup')}<button class="btn ghost" data-a="toLogin">${t('splashLogin')}</button></footer></div></div>`,
 
