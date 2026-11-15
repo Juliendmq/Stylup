@@ -1,7 +1,7 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151255';
-import * as C from './catalog.js?v=202611151255';
-import * as E from './engine.js?v=202611151255';
+import { STR } from './i18n.js?v=202611151256';
+import * as C from './catalog.js?v=202611151256';
+import * as E from './engine.js?v=202611151256';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -90,7 +90,7 @@ const SCREENS = {
 
   verify: () => {
     const left = Math.max(0, Math.ceil(((F.resendAt || 0) - Date.now()) / 1000));
-    return `<div class="screen">${top(t('verifyTitle'))}<main class="main"><div class="hero"><h2>${t('verifyHead')}</h2><p class="muted">${t('verifySub', { email: esc(F.email) })}</p></div>
+    return `<div class="screen">${top(t('verifyTitle'))}<main class="main"><div class="hero"><h2>${t('verifyHead')}</h2><p class="muted">${t('verifySub', { email: `<strong>${esc(F.email)}</strong>` })}</p></div>
     ${otpField()}
     <button class="link" data-a="resend" id="resendBtn" ${left ? 'disabled' : ''}>${left ? t('resendIn', { n: left }) : t('resend')}</button>
     </main>${authFoot(pbtn(t('confirmBtn'), 'verifyOk'))}</div>`;
@@ -119,7 +119,7 @@ const SCREENS = {
     ${fieldIn('email', t('email'), 'email', { ph: t('emailPh'), ac: 'email', im: 'email' })}
     </main>${authFoot(pbtn(t('sendLink'), 'forgotOk'))}</div>`,
 
-  forgotSent: () => `<div class="screen">${top(t('forgotTitle'))}<main class="main"><div class="hero"><h2>${t('sentTitle')}</h2><p class="muted">${t('sentSub', { email: esc(F.sentTo) })}</p></div>
+  forgotSent: () => `<div class="screen">${top(t('forgotTitle'))}<main class="main"><div class="hero"><h2>${t('sentTitle')}</h2><p class="muted">${t('sentSub', { email: `<strong>${esc(F.sentTo)}</strong>` })}</p></div>
     <p class="note">${t('demoLink')}</p><button class="btn ghost" data-a="openLink">${t('openLink')}</button>
     </main>${authFoot(pbtn(t('backLogin'), 'backLogin'))}</div>`,
 
