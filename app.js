@@ -1,7 +1,7 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151334';
-import * as C from './catalog.js?v=202611151334';
-import * as E from './engine.js?v=202611151334';
+import { STR } from './i18n.js?v=202611151340';
+import * as C from './catalog.js?v=202611151340';
+import * as E from './engine.js?v=202611151340';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -266,7 +266,7 @@ const SCREENS = {
       <section class="card"><span class="label">${t('tones')}</span>${C.TONES.map(x => tog('tone:' + x.id, x.id + ' · ' + lab(x), swatchCss(x.id))).join('')}</section>
       <section class="card"><span class="label">${t('reflets')}</span>${C.REFLETS.map(x => tog('reflet:' + x.id, '.' + x.id + ' · ' + lab(x), swatchCss(7, x.id))).join('')}</section>`
       : `<section class="card"><span class="label">${t(sub === 'f' ? 'cutsF' : 'cutsH')}</span>${C.CUT_SETS[sub].find(x => x.key === C.CUSTOM_FIELD[sub]).options.filter(o => !o.custom).map(o => tog(sub + ':' + C.CUSTOM_FIELD[sub] + ':' + o.id, lab(o))).join('')}${cutRows(sub)}${add(t('addMyCut'), 'newCut', `data-set="${sub}"`)}</section>`;
-    return `<div class="screen">${top(t('catalogTitle'), { noBack: true, big: true })}<main class="main">${seg}${seg2}<p class="muted" style="margin:0">${t('catalogSub')}</p>
+    return `<div class="screen">${top(t('catalogTitle'), { noBack: true, big: true })}<main class="main">${seg}${seg2}<p class="muted" style="margin:0">${t({ color: 'catSubColor', f: 'catSubF', h: 'catSubH' }[sub])}</p>
       ${content}
       </main>${tabbar('catalog')}</div>`;
   },
