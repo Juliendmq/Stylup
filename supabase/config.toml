@@ -2,5 +2,6 @@
 project_id = "stylup"
 
 [functions.render]
-# La fonction accepte la clé publique (anon) de l'app ; la clé Gemini reste côté serveur.
-verify_jwt = true
+# Accepte la clé publique de l'app, ancienne (anon, JWT) comme nouvelle (sb_publishable_…, pas un JWT).
+# La protection contre les abus est le plafond quotidien DAILY_LIMIT ; la clé Gemini reste côté serveur.
+verify_jwt = false
