@@ -128,8 +128,10 @@ input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; poin
 .seg { display: flex; gap: 6px; }
 .seg button { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); }
 .seg button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-.trow { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); background: none; border-left: 0; border-right: 0; border-bottom: 0; width: 100%; text-align: left; }
-.trow:first-of-type { border-top: 0; }
+.trow { display: flex; align-items: center; gap: 12px; padding: 12px 0; min-height: 56px; box-sizing: border-box; border-top: 1px solid var(--line); background: none; border-left: 0; border-right: 0; border-bottom: 0; width: 100%; text-align: left; }
+/* Lignes de liste dans une carte : pas d'écart de carte entre elles, même espace au-dessus et au-dessous de chaque séparateur */
+.card > .trow + .trow, .card > .trow + .addrow { margin-top: -12px; }
+.card > .label + .trow { border-top: 0; padding-top: 4px; min-height: 0; }
 .trow .grow { flex: 1; }
 .trow .swatch { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); flex: none; }
 /* panneau bas */
@@ -231,12 +233,12 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .legal { margin: 0; text-align: center; font-size: .8125rem; line-height: 1.45; color: var(--muted); }
 
 /* Catalogue : éléments ajoutés par le salon */
-.trow.mine { padding: 6px 0; }
+.trow.mine { padding: 8px 0; }
 .mine-edit { background: none; border: 0; padding: 4px 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; min-width: 0; }
 .mine-edit > span:first-child { color: var(--text); }
 .mine-edit .muted { font-size: .875rem; }
 .tswitch { background: none; border: 0; padding: 8px 0 8px 8px; display: grid; }
-.addrow { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; border-top: 1px solid var(--line); padding: 14px 0 4px; color: var(--accent); font-weight: 600; text-align: left; }
+.addrow { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; border-top: 1px solid var(--line); padding: 14px 0 2px; color: var(--accent); font-weight: 600; text-align: left; }
 .addrow .plus { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent); }
 .card > .label + .addrow, .card > p + .addrow { border-top: 0; }
 .btn.ghost.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }

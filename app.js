@@ -1,7 +1,7 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151333';
-import * as C from './catalog.js?v=202611151333';
-import * as E from './engine.js?v=202611151333';
+import { STR } from './i18n.js?v=202611151334';
+import * as C from './catalog.js?v=202611151334';
+import * as E from './engine.js?v=202611151334';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
