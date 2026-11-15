@@ -1,7 +1,7 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151256';
-import * as C from './catalog.js?v=202611151256';
-import * as E from './engine.js?v=202611151256';
+import { STR } from './i18n.js?v=202611151301';
+import * as C from './catalog.js?v=202611151301';
+import * as E from './engine.js?v=202611151301';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -42,9 +42,9 @@ const pbtn = (label, action, enabled = true, data = '') => `<button class="btn p
 const tabbar = cur => `<nav class="tabs-bar">${[['home', 'tabSessions'], ['catalog', 'tabCatalog'], ['settings', 'tabSettings']].map(([r, k]) => `<button data-a="tab" data-r="${r}" aria-current="${cur === r}"><i></i>${t(k)}</button>`).join('')}</nav>`;
 const fieldIn = (key, label, type = 'text', o = {}) => {
   const err = F.err && F.err[key];
-  const input = `<input class="input ${o.cls || ''} ${err ? 'invalid' : ''}" id="f-${key}" data-f="${key}" type="${type}" value="${esc(F[key] || '')}" placeholder="${esc(o.ph || ' ')}" autocomplete="${o.ac || 'off'}" ${o.im ? `inputmode="${o.im}"` : ''} ${o.max ? `maxlength="${o.max}"` : ''} autocapitalize="off" spellcheck="false" ${err ? 'aria-invalid="true"' : ''}>`;
+  const input = `<input class="input ${o.cls || ''} ${err ? 'invalid' : ''}" id="f-${key}" data-f="${key}" type="${type}" value="${esc(F[key] || '')}" placeholder="${esc(o.ph || ' ')}" autocomplete="${o.ac || 'off'}" ${o.im ? `inputmode="${o.im}"` : ''} ${o.max ? `maxlength="${o.max}"` : ''} autocapitalize="off" spellcheck="false" ${o.req ? 'required aria-required="true"' : ''} ${err ? 'aria-invalid="true"' : ''}>`;
   const body = type === 'password' ? `<div class="pw">${input}<button type="button" class="eye" data-eye="f-${key}" aria-label="${t('show')}">${svg('eye')}</button></div>` : input;
-  return `<label class="field" for="f-${key}"><span class="label">${esc(label)}</span>${body}${err ? `<span class="err">${esc(err)}</span>` : o.hint ? `<span class="hint">${esc(o.hint)}</span>` : ''}</label>`;
+  return `<label class="field" for="f-${key}"><span class="label">${esc(label)}${o.req ? '<span class="req" aria-hidden="true"> *</span>' : ''}</span>${body}${err ? `<span class="err">${esc(err)}</span>` : o.hint ? `<span class="hint">${esc(o.hint)}</span>` : ''}</label>`;
 };
 // Code de confirmation à 6 chiffres : un vrai champ (clavier numérique, remplissage auto du code reçu, collage)
 // posé sur 6 cases visuelles groupées 3 + 3.
@@ -73,6 +73,11 @@ const formErr = () => F.err && F.err.form ? `<p class="err" role="alert" style="
 const authFoot = (primary, extra = '') => `<footer class="foot">${primary}${extra}</footer>`;
 const langPill = () => `<button class="pill" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog">${langLabel(store.lang)}<span class="chev-s">${svg('down', 14)}</span></button>`;
 
+// Écrans dont le bouton principal reste désactivé tant que les champs obligatoires ne sont pas remplis
+const READY = {
+  salonSetup: () => ['first', 'salon', 'city'].every(k => (F[k] || '').trim()) && !!F.trade,
+};
+
 const SCREENS = {
   splash: () => `<div class="splash"><video class="splash-video" autoplay muted loop playsinline preload="auto" poster="assets/splash-bg.jpg" src="assets/splash.mp4" aria-hidden="true"></video><div class="splash-veil"></div>
     <div class="splash-content"><header class="splash-top"><button class="pill glass" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog">${langLabel(store.lang)}<span class="chev-s">${svg('down', 14)}</span></button></header>
@@ -97,13 +102,13 @@ const SCREENS = {
   },
 
   salonSetup: () => {
-    const card = (k, name, sub, on, dis) => `<button class="trade ${on ? 'on' : ''}" data-a="trade" data-v="${k}" ${dis ? 'disabled' : ''}><span class="grow"><img src="assets/trade-${k}.svg" alt="" width="32" height="32"><strong>${t(name)}</strong><span class="muted">${dis ? t('soon') : t(sub)}</span></span><span class="radio ${on ? 'on' : ''}"></span></button>`;
+    const card = (k, name, sub, dis) => { const on = F.trade === k; return `<button class="trade ${on ? 'on' : ''}" data-a="trade" data-v="${k}" role="radio" aria-checked="${on}" ${dis ? 'disabled' : ''}><span class="grow"><img src="assets/trade-${k}.svg" alt="" width="32" height="32"><strong>${t(name)}</strong><span class="muted">${dis ? t('soon') : t(sub)}</span></span><span class="radio ${on ? 'on' : ''}"></span></button>`; };
     return `<div class="screen">${top(t('salonTitle'))}<main class="main">
-    ${fieldIn('first', t('yourFirst'), 'text', { ac: 'given-name' })}
-    ${fieldIn('salon', t('salonName'), 'text', { ac: 'organization' })}
-    ${fieldIn('city', t('city'), 'text', { ac: 'address-level2' })}
-    <div class="field"><span class="label">${t('yourTrade')}</span>${card('hair', 'tradeHair', 'tradeHairSub', true)}${card('nails', 'tradeNails', 'tradeNailsSub', false, true)}${card('lashes', 'tradeLashes', 'tradeLashesSub', false, true)}</div>
-    </main>${authFoot(pbtn(t('done'), 'salonOk'))}</div>`;
+    ${fieldIn('first', t('yourFirst'), 'text', { ac: 'given-name', req: true })}
+    ${fieldIn('salon', t('salonName'), 'text', { ac: 'organization', req: true })}
+    ${fieldIn('city', t('city'), 'text', { ac: 'address-level2', req: true })}
+    <div class="field" role="radiogroup" aria-label="${t('yourTrade')}"><span class="label">${t('yourTrade')}<span class="req" aria-hidden="true"> *</span></span>${card('hair', 'tradeHair', 'tradeHairSub')}${card('nails', 'tradeNails', 'tradeNailsSub', true)}${card('lashes', 'tradeLashes', 'tradeLashesSub', true)}</div>
+    </main>${authFoot(pbtn(t('done'), 'salonOk', READY.salonSetup()))}</div>`;
   },
 
   login: () => `<div class="screen">${top(t('loginTitle'))}<main class="main">
@@ -366,11 +371,11 @@ const A = {
     store.account.verified = true; save();
     F = { first: store.account.first || '', salon: store.account.salon || '', city: store.account.city || '' }; go('salonSetup', {}, 'replace');
   },
-  trade: () => {},
+  trade: d => { F.trade = d.v; render(); },
   salonOk: () => {
-    const errs = {}; ['first', 'salon'].forEach(k => { if (!(F[k] || '').trim()) errs[k] = t('errRequired'); });
-    if (Object.keys(errs).length) return fail(errs);
-    Object.assign(store.account, { first: F.first.trim(), salon: F.salon.trim(), city: (F.city || '').trim(), trade: 'hair' }); store.pro = F.first.trim(); enterApp();
+    const errs = {}; ['first', 'salon', 'city'].forEach(k => { if (!(F[k] || '').trim()) errs[k] = t('errRequired'); });
+    if (Object.keys(errs).length || !F.trade) return fail(errs);
+    Object.assign(store.account, { first: F.first.trim(), salon: F.salon.trim(), city: F.city.trim(), trade: F.trade }); store.pro = F.first.trim(); enterApp();
   },
   loginOk: async () => {
     const email = (F.email || '').trim(), errs = {};
@@ -380,7 +385,7 @@ const A = {
     const acc = store.account;
     if (!acc || acc.email.toLowerCase() !== email.toLowerCase() || acc.hash !== await hashPass(email, F.pass)) return fail({ form: t('errLogin') });
     if (!acc.verified) { F = { email, code: '', resendAt: Date.now() + 30000 }; return go('verify'); }
-    if (!acc.salon) { F = { first: '', salon: '', city: '' }; return go('salonSetup'); }
+    if (!acc.salon) { F = { first: '', salon: '', city: '', trade: null }; return go('salonSetup'); }
     store.pro = acc.first || store.pro; enterApp();
   },
   toForgot: () => { F = { email: F.email || '' }; go('forgot'); },
@@ -464,7 +469,7 @@ const A = {
 
 $app.addEventListener('click', e => { const eye = e.target.closest('[data-eye]'); if (eye) { e.preventDefault(); const inp = document.getElementById(eye.dataset.eye); inp.type = inp.type === 'password' ? 'text' : 'password'; eye.setAttribute('aria-label', inp.type === 'password' ? t('show') : t('hide')); eye.classList.toggle('on', inp.type === 'text'); return; } const el = e.target.closest('[data-a]'); if (!el || el.disabled) return; if (el.dataset.a === 'closeSheet' && el.classList.contains('sheet')) return; const f = A[el.dataset.a]; if (f) { e.preventDefault(); f(el.dataset, el); } });
 $app.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.f) { e.preventDefault(); $app.querySelector('.foot .btn.primary')?.click(); } });
-$app.addEventListener('input', e => { if (e.target.dataset.otp !== undefined) otpPaint(e.target); if (e.target.dataset.f) { const k = e.target.dataset.f; F[k] = e.target.value; if (F.err && (F.err[k] || F.err.form)) { delete F.err[k]; delete F.err.form; e.target.classList.remove('invalid'); e.target.removeAttribute('aria-invalid'); e.target.closest('.field')?.querySelector('.err')?.remove(); $app.querySelector('p.err[role=alert]')?.remove(); } return; } const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'pro') { store.pro = e.target.value || 'Karine'; save(); } else if (k === 'brushSize') route.size = +e.target.value; });
+$app.addEventListener('input', e => { if (e.target.dataset.otp !== undefined) otpPaint(e.target); if (e.target.dataset.f) { const k = e.target.dataset.f; F[k] = e.target.value; const ready = READY[route.name], cta = ready && $app.querySelector('.foot .btn.primary'); if (cta) cta.disabled = !ready(); if (F.err && (F.err[k] || F.err.form)) { delete F.err[k]; delete F.err.form; e.target.classList.remove('invalid'); e.target.removeAttribute('aria-invalid'); e.target.closest('.field')?.querySelector('.err')?.remove(); $app.querySelector('p.err[role=alert]')?.remove(); } return; } const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'pro') { store.pro = e.target.value || 'Karine'; save(); } else if (k === 'brushSize') route.size = +e.target.value; });
 $app.addEventListener('focusin', e => { if (e.target.dataset.otp !== undefined) e.target.closest('.otp').classList.add('focus'); });
 $app.addEventListener('focusout', e => { if (e.target.dataset.otp !== undefined) e.target.closest('.otp').classList.remove('focus'); });
 $app.addEventListener('click', e => { if (e.target.dataset.otp !== undefined) otpDemoFill(e.target); });

@@ -203,7 +203,9 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .trade { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 14px; width: 100%; text-align: left; }
 .trade .grow { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 .trade .grow img { width: 32px; height: 32px; margin-bottom: 6px; }
-.trade.on { background: #2e2437; }
+.trade { transition: background-color .15s ease, border-color .15s ease; }
+.trade.on { background: #2e2437; border-color: var(--accent); }
+.req { color: var(--accent); }
 .trade:disabled { opacity: .45; cursor: default; }
 .rowlink { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0 2px; margin: 0; color: var(--muted); font-size: 14px; }
 .rowlink .link { padding: 6px 4px; }
