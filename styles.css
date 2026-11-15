@@ -229,3 +229,27 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .sep { border: 0; height: 1px; background: var(--line); margin: 8px 0 0; }
 .sep.section { margin: 8px 0; } /* séparateur entre sections : 24 px de part et d'autre */
 .legal { margin: 0; text-align: center; font-size: .8125rem; line-height: 1.45; color: var(--muted); }
+
+/* Catalogue : éléments ajoutés par le salon */
+.trow.mine { padding: 6px 0; }
+.mine-edit { background: none; border: 0; padding: 4px 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; min-width: 0; }
+.mine-edit > span:first-child { color: var(--text); }
+.mine-edit .muted { font-size: .875rem; }
+.tswitch { background: none; border: 0; padding: 8px 0 8px 8px; display: grid; }
+.addrow { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; border-top: 1px solid var(--line); padding: 14px 0 4px; color: var(--accent); font-weight: 600; text-align: left; }
+.addrow .plus { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent); }
+.card > .label + .addrow, .card > p + .addrow { border-top: 0; }
+.btn.ghost.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+/* Panneau « Nouvelle couleur » */
+.minigrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 8px; }
+.mtile { background: none; border: 1px solid transparent; border-radius: 12px; padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--muted); font-size: .875rem; font-variant-numeric: tabular-nums; }
+.mtile i { display: block; width: 100%; aspect-ratio: 1; max-width: 48px; border-radius: 50%; border: 1px solid var(--line); }
+.mtile[aria-pressed=true] { border-color: var(--accent); color: var(--text); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.mtile.none { justify-content: center; min-height: 64px; }
+.ccprev { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line); }
+.ccprev .sw { width: 44px; height: 44px; border-radius: 50%; flex: none; border: 1px solid var(--line); }
+.ccprev .grow { display: flex; flex-direction: column; gap: 2px; }
+.ccprev strong { font-family: var(--display); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.tile .tname { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile .tcode { font-size: .8125rem; margin-top: -4px; }
+.sheet.stay, .veil.stay { animation: none; }

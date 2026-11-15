@@ -1,5 +1,5 @@
 // Moteur d'image : chargement des photos, masque cheveux, recoloration, rendus de coupe.
-import { colorOf } from './catalog.js?v=202611151322';
+import { colorOf } from './catalog.js?v=202611151325';
 
 export const DEMO = {
   photo: 'assets/demo-original.jpg',
@@ -74,7 +74,7 @@ const LUT = new Float32Array(256); for (let i = 0; i < 256; i++) LUT[i] = toLin(
 const toSrgb = v => 255 * (v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
 
 // Applique la couleur (hauteur de ton + reflet) sur les zones du masque, en gardant les ombres et la texture.
-export function recolor(photo, mask, toneId, refletId, intensity = 0.92) {
+export function recolor(photo, mask, toneId, refletId, intensity = 0.92, reflet2 = null) {
   const w = photo.width, h = photo.height;
   const out = canvasOf(w, h); const ctx = out.getContext('2d'); ctx.drawImage(photo, 0, 0);
   const img = ctx.getImageData(0, 0, w, h), px = img.data;
@@ -83,7 +83,7 @@ export function recolor(photo, mask, toneId, refletId, intensity = 0.92) {
   for (let i = 0; i < px.length; i += 4) { const a = m[i] / 255; if (a > 0.5) { sum += 0.2126 * LUT[px[i]] + 0.7152 * LUT[px[i + 1]] + 0.0722 * LUT[px[i + 2]]; cnt++; } }
   if (!cnt) return out;
   const mean = sum / cnt;
-  const T = colorOf(toneId, refletId).map(toLin);
+  const T = colorOf(toneId, refletId, reflet2).map(toLin);
   const LT = 0.2126 * T[0] + 0.7152 * T[1] + 0.0722 * T[2];
   // plus la cible est claire par rapport à la base, plus on adoucit le contraste (cheveux éclaircis)
   const gamma = LT > mean ? 0.75 : 1;

@@ -1,11 +1,14 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151322';
-import * as C from './catalog.js?v=202611151322';
-import * as E from './engine.js?v=202611151322';
+import { STR } from './i18n.js?v=202611151325';
+import * as C from './catalog.js?v=202611151325';
+import * as E from './engine.js?v=202611151325';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
 const store = (() => { let s = null; try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {} return Object.assign({ lang: null, pro: 'Karine', started: false, sessions: [], hidden: [], account: null, loggedIn: false }, s || {}); })();
+// Couleurs et coupes ajoutées par le salon dans le Catalogue
+store.custom = Object.assign({ colors: [], cuts: { f: [], h: [] } }, store.custom || {});
+C.applyCustomCuts(store.custom.cuts);
 if (!store.lang) { const l = (navigator.language || 'fr').slice(0, 2); store.lang = C.LANGS.includes(l) ? l : 'en'; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); return true; } catch (e) { return false; } };
 
@@ -20,6 +23,7 @@ const pad = n => String(n).padStart(2, '0');
 const FLAG = { fr: '🇫🇷', en: '🇬🇧', it: '🇮🇹', es: '🇪🇸', de: '🇩🇪' };
 const langLabel = l => `<span class="flag" aria-hidden="true">${FLAG[l]}</span> ${l.toUpperCase()}`;
 const ICON = {
+  plus: '<path d="M12 5v14M5 12h14"/>',
   back: '<path d="M15 5l-7 7 7 7"/>', down: '<path d="M6 9l6 6 6-6"/>', right: '<path d="M9 5l7 7-7 7"/>', up: '<path d="M5 15l7-7 7 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>',
   cut: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1L20 20M8.1 15.9L20 4"/>', len: '<path d="M3 16L16 3l5 5L8 21z"/><path d="M7 12l2 2M10 9l2 2M13 6l2 2"/>',
   fr: '<path d="M4 11c2-6 14-6 16 0"/><path d="M7 10v6M10.5 9v7M14 9v7M17 10v6"/>', clip: '<rect x="7" y="2" width="10" height="20" rx="3"/><path d="M7 7h10M10 2v5M14 2v5"/>',
@@ -27,7 +31,9 @@ const ICON = {
   eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
 };
 const svg = (k, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
-const swatchCss = (tone, reflet = 0) => C.lockGradient(C.colorOf(tone, reflet));
+const swatchCss = (tone, reflet = 0, reflet2 = null) => C.lockGradient(C.colorOf(tone, reflet, reflet2));
+const colorSw = c => swatchCss(c.tone, c.reflet ?? 0, c.reflet2 ?? null);
+const uid = () => 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 const fmtDate = ts => new Intl.DateTimeFormat(store.lang, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(ts));
 
 function go(name, params = {}, mode = 'push') { if (mode === 'push') stack.push(route); route = { name, ...params }; sheet = null; render(); $app.querySelector('.main')?.scrollTo(0, 0); }
@@ -191,6 +197,11 @@ const SCREENS = {
   color: () => {
     const cards = S.colors.map((c, i) => {
       const open = S.open.color === i; const tn = c.tone && C.TONES.find(x => x.id === c.tone); const rf = c.reflet != null && C.REFLETS.find(x => x.id === c.reflet);
+      if (c.custom) {
+        const row = `<button class="sel" data-a="toneSheet" data-i="${i}"><span class="sw" style="background:${colorSw(c)}"></span><span class="grow"><strong>${esc(c.name)}</strong><span class="muted">${C.colorCode(c.tone, c.reflet, c.reflet2)} · ${t('customTag')}</span></span><span class="mod">${t('modify')}</span></button>`;
+        return `<section class="card"><button class="cardhead" data-a="openCard" data-kind="color" data-i="${i}" aria-expanded="${open}"><h3>${t('colorN', { n: pad(i + 1) })}${!open ? ` <span class="muted" style="font-weight:400">· ${esc(colorTitle(c))}</span>` : ''}</h3><span class="chev">${svg('up')}</span></button>
+        ${open ? `<div class="field"><span class="label">${t('myColors')}</span>${row}</div>${i > 0 ? `<button class="link" data-a="removeCard" data-kind="color" data-i="${i}">${t('remove')}</button>` : ''}` : ''}</section>`;
+      }
       const toneRow = tn ? `<button class="sel" data-a="toneSheet" data-i="${i}"><span class="sw" style="background:${swatchCss(tn.id)}"></span><span class="grow"><strong>${esc(lab(tn))}</strong><span class="muted">${t('toneDetail', { n: tn.id })}</span></span><span class="mod">${t('modify')}</span></button>` : `<button class="chipbtn" data-a="toneSheet" data-i="${i}">${t('chooseTone')}</button>`;
       const refRow = rf ? `<button class="sel" data-a="refletSheet" data-i="${i}"><span class="sw" style="background:${swatchCss(tn.id, rf.id)}"></span><span class="grow"><strong>${esc(lab(rf))}</strong><span class="muted">${t('refletDetail', { n: rf.id, temp: t(rf.temp === 'warm' ? 'warm' : rf.temp === 'cold' ? 'cold' : 'neutral') })}</span></span><span class="mod">${t('modify')}</span></button>` : `<button class="chipbtn" data-a="refletSheet" data-i="${i}">${t('chooseReflet')}</button>`;
       return `<section class="card"><button class="cardhead" data-a="openCard" data-kind="color" data-i="${i}" aria-expanded="${open}"><h3>${t('colorN', { n: pad(i + 1) })}${!open && tn ? ` <span class="muted" style="font-weight:400">· ${esc(colorTitle(c))}</span>` : ''}</h3><span class="chev">${svg('up')}</span></button>
@@ -233,11 +244,16 @@ const SCREENS = {
 
   catalog: () => {
     const tog = (k, name, sw) => `<button class="trow" data-a="hide" data-k="${k}" role="switch" aria-checked="${!hidden(k)}">${sw ? `<span class="swatch" style="background:${sw}"></span>` : ''}<span class="grow" style="${hidden(k) ? 'color:var(--muted)' : ''}">${esc(name)}</span><span class="toggle ${hidden(k) ? '' : 'on'}"></span></button>`;
+    // Ligne d'un élément ajouté par le salon : toucher le nom pour le modifier, l'interrupteur pour le masquer
+    const mine = (k, name, sub, sw, act, data) => `<div class="trow mine">${sw ? `<span class="swatch" style="background:${sw}"></span>` : ''}<button class="grow mine-edit" data-a="${act}" ${data} aria-label="${esc(t('edit2') + ' : ' + name)}"><span style="${hidden(k) ? 'color:var(--muted)' : ''}">${esc(name)}</span><span class="muted">${esc(sub)}</span></button><button class="tswitch" data-a="hide" data-k="${k}" role="switch" aria-checked="${!hidden(k)}" aria-label="${esc(name)}"><span class="toggle ${hidden(k) ? '' : 'on'}"></span></button></div>`;
+    const add = (label, act, data = '') => `<button class="addrow" data-a="${act}" ${data}><span class="plus">${svg('plus', 18)}</span>${esc(label)}</button>`;
+    const cutRows = set => store.custom.cuts[set].map(x => mine(set + ':' + C.CUSTOM_FIELD[set] + ':' + x.id, x.name, x.desc || t('customTag'), '', 'editCut', `data-set="${set}" data-id="${x.id}"`)).join('');
     return `<div class="screen">${top(t('catalogTitle'), { noBack: true, big: true })}<main class="main"><p class="muted" style="margin:0">${t('catalogSub')}</p>
+      <section class="card"><span class="label">${t('myColors')}</span>${store.custom.colors.length ? store.custom.colors.map(x => mine('ucolor:' + x.id, x.name, C.colorCode(x.tone, x.reflet, x.reflet2) + ' · ' + lab(C.TONES.find(y => y.id === x.tone)), colorSw(x), 'editColor', `data-id="${x.id}"`)).join('') : `<p class="muted" style="margin:0">${t('myColorsEmpty')}</p>`}${add(t('addMyColor'), 'newColor')}</section>
       <section class="card"><span class="label">${t('tones')}</span>${C.TONES.map(x => tog('tone:' + x.id, x.id + ' · ' + lab(x), swatchCss(x.id))).join('')}</section>
       <section class="card"><span class="label">${t('reflets')}</span>${C.REFLETS.map(x => tog('reflet:' + x.id, '.' + x.id + ' · ' + lab(x), swatchCss(7, x.id))).join('')}</section>
-      <section class="card"><span class="label">${t('cutsF')}</span>${C.CUT_SETS.f[1].options.map(o => tog('f:shape:' + o.id, lab(o))).join('')}</section>
-      <section class="card"><span class="label">${t('cutsH')}</span>${C.CUT_SETS.h[2].options.map(o => tog('h:style:' + o.id, lab(o))).join('')}</section>
+      <section class="card"><span class="label">${t('cutsF')}</span>${C.CUT_SETS.f[1].options.filter(o => !o.custom).map(o => tog('f:shape:' + o.id, lab(o))).join('')}${cutRows('f')}${add(t('addMyCut'), 'newCut', 'data-set="f"')}</section>
+      <section class="card"><span class="label">${t('cutsH')}</span>${C.CUT_SETS.h[2].options.filter(o => !o.custom).map(o => tog('h:style:' + o.id, lab(o))).join('')}${cutRows('h')}${add(t('addMyCut'), 'newCut', 'data-set="h"')}</section>
       </main>${tabbar('catalog')}</div>`;
   },
 
@@ -265,7 +281,8 @@ function sheetHtml() {
   let body = '', title = '', sub = '', btn = pbtn(t('validate'), 'sheetOk', sheet.sel != null);
   if (sheet.kind === 'tone') {
     title = t('toneSheet'); sub = t('toneSheetSub');
-    body = `<div class="grid3">${C.TONES.filter(x => !hidden('tone:' + x.id) || x.id === sheet.sel).map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${swatchCss(x.id)}"></i>${esc(lab(x))}</button>`).join('')}</div>`;
+    const mine = store.custom.colors.filter(x => !hidden('ucolor:' + x.id) || x.id === sheet.sel);
+    body = (mine.length ? `<span class="label">${t('yourColorsSheet')}</span><div class="grid3">${mine.map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${colorSw(x)}"></i><span class="tname">${esc(x.name)}</span><span class="tcode">${C.colorCode(x.tone, x.reflet, x.reflet2)}</span></button>`).join('')}</div><span class="label" style="margin-top:8px">${t('tonesSheet')}</span>` : '') + `<div class="grid3">${C.TONES.filter(x => !hidden('tone:' + x.id) || x.id === sheet.sel).map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${swatchCss(x.id)}"></i>${esc(lab(x))}</button>`).join('')}</div>`;
   } else if (sheet.kind === 'reflet') {
     const tone = S.colors[sheet.i].tone; title = t('refletSheet'); sub = t('refletSheetSub', { tone: tone + ' · ' + lab(C.TONES.find(x => x.id === tone)) });
     body = `<div class="grid3">${C.REFLETS.filter(x => !hidden('reflet:' + x.id) || x.id === sheet.sel).map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${swatchCss(tone, x.id)}"></i>${esc(lab(x))}</button>`).join('')}</div>`;
@@ -273,6 +290,20 @@ function sheetHtml() {
     const f = C.CUT_SETS[S.cutSet].find(x => x.key === sheet.k); const cut = S.cuts[sheet.i]; title = t('f_' + f.key); sub = t('sub_' + f.key);
     const opts = f.options.filter(o => !hidden(S.cutSet + ':' + f.key + ':' + o.id) || o.id === sheet.sel);
     body = opts.map(o => { const okk = C.isAllowed(f, o, cut); return `<button class="opt" data-a="pick" data-v="${o.id}" aria-pressed="${sheet.sel === o.id}" ${okk ? '' : 'disabled'}><span class="grow"><strong>${esc(lab(o))}</strong><span class="muted">${esc(okk ? des(o) : t('incompatible'))}</span></span><span class="radio ${sheet.sel === o.id ? 'on' : ''}"></span></button>`; }).join('');
+  } else if (sheet.kind === 'customColor') {
+    title = sheet.id ? t('editColor') : t('newColor');
+    const tiles = (f, list, none) => `<div class="minigrid">${none ? `<button class="mtile none" data-a="ccPick" data-f="${f}" data-v="" aria-pressed="${sheet[f] == null}">${t('noneOpt')}</button>` : ''}${list.map(x => `<button class="mtile" data-a="ccPick" data-f="${f}" data-v="${x.id}" aria-pressed="${sheet[f] === x.id}"><i style="background:${f === 'tone' ? swatchCss(x.id) : swatchCss(sheet.tone || 7, x.id)}"></i><span>${f === 'tone' ? x.id : '.' + x.id}</span></button>`).join('')}</div>`;
+    body = `<label class="field" for="cc-name"><span class="label">${t('cName')}<span class="req" aria-hidden="true"> *</span></span><input class="input" id="cc-name" data-sheet="name" value="${esc(sheet.name)}" placeholder="${esc(t('cNamePh'))}" autocomplete="off"></label>
+      <div class="ccprev"><span class="sw" style="background:${sheet.tone ? swatchCss(sheet.tone, sheet.reflet, sheet.reflet2) : 'var(--line)'}"></span><span class="grow"><strong>${sheet.tone ? C.colorCode(sheet.tone, sheet.reflet, sheet.reflet2) : '–'}</strong><span class="muted">${sheet.tone ? esc(lab(C.TONES.find(x => x.id === sheet.tone)) + (sheet.reflet ? ' · ' + lab(C.REFLETS.find(x => x.id === sheet.reflet)).toLowerCase() : '') + (sheet.reflet2 != null && sheet.reflet2 !== sheet.reflet ? ' · ' + lab(C.REFLETS.find(x => x.id === sheet.reflet2)).toLowerCase() : '')) : t('cTone')}</span></span></div>
+      <span class="label">${t('cTone')}<span class="req" aria-hidden="true"> *</span></span>${tiles('tone', C.TONES)}
+      <span class="label">${t('cR1')}</span>${tiles('reflet', C.REFLETS)}
+      <span class="label">${t('cR2')} · ${t('optionalTag')}</span>${tiles('reflet2', C.REFLETS.filter(x => x.id), true)}`;
+    btn = pbtn(t('saveBtn'), 'ccSave', !!(sheet.name.trim() && sheet.tone)) + (sheet.id ? `<button class="btn ghost danger" data-a="customDelete">${t('deleteBtn')}</button>` : '');
+  } else if (sheet.kind === 'customCut') {
+    title = sheet.id ? t('editCut') : t('newCut'); sub = sheet.set === 'f' ? t('cutsF') : t('cutsH');
+    body = `<label class="field" for="cu-name"><span class="label">${t('cName')}<span class="req" aria-hidden="true"> *</span></span><input class="input" id="cu-name" data-sheet="name" value="${esc(sheet.name)}" placeholder="${esc(t('cutNamePh'))}" autocomplete="off"></label>
+      <label class="field" for="cu-desc"><span class="label">${t('cDesc')} · ${t('optionalTag')}</span><input class="input" id="cu-desc" data-sheet="desc" value="${esc(sheet.desc)}" placeholder="${esc(t('cDescPh'))}" autocomplete="off"></label>`;
+    btn = pbtn(t('saveBtn'), 'cuSave', !!sheet.name.trim()) + (sheet.id ? `<button class="btn ghost danger" data-a="customDelete">${t('deleteBtn')}</button>` : '');
   } else if (sheet.kind === 'lang') {
     title = t('language'); body = `<div class="chips">${C.LANGS.map(l => `<button data-a="setLang" data-l="${l}" aria-pressed="${store.lang === l}">${langLabel(l)}</button>`).join('')}</div>`; btn = '';
   } else if (sheet.kind === 'abandon') {
@@ -287,12 +318,12 @@ const cutDone = cut => C.CUT_SETS[S.cutSet].every(f => !f.required || cut[f.key]
 const opt = (cut, key) => { const f = C.CUT_SETS[S.cutSet].find(x => x.key === key); return f && cut[key] ? f.options.find(o => o.id === cut[key]) : null; };
 function cutTitle(cut) { if (S.cutSet === 'f') { const a = opt(cut, 'shape'), b = opt(cut, 'length'); return [a, b].filter(Boolean).map(lab).join(' · '); } const a = opt(cut, 'style'), b = opt(cut, 'top'); return [a, b].filter(Boolean).map(lab).join(' · '); }
 function cutSub(cut) { const o = opt(cut, S.cutSet === 'f' ? 'fringe' : 'sides'); return o ? lab(o) : ''; }
-function colorTitle(c) { const tn = C.TONES.find(x => x.id === c.tone); const rf = C.REFLETS.find(x => x.id === (c.reflet ?? 0)); return `${c.tone}.${c.reflet ?? 0} · ${lab(tn)}${rf.id ? ' ' + lab(rf).toLowerCase() : ''}`; }
+function colorTitle(c) { if (c.custom) return `${c.name} · ${C.colorCode(c.tone, c.reflet, c.reflet2)}`; const tn = C.TONES.find(x => x.id === c.tone); const rf = C.REFLETS.find(x => x.id === (c.reflet ?? 0)); return `${c.tone}.${c.reflet ?? 0} · ${lab(tn)}${rf.id ? ' ' + lab(rf).toLowerCase() : ''}`; }
 function colorNote(c) { const rf = C.REFLETS.find(x => x.id === (c.reflet ?? 0)); return t(rf.temp === 'warm' ? 'warmNote' : rf.temp === 'cold' ? 'coldNote' : 'neutralNote'); }
 function infoOf(v) {
-  if (v.cut && v.color) return { title: cutTitle(v.cut), sub: colorTitle(v.color), dot: `background:${swatchCss(v.color.tone, v.color.reflet ?? 0)}` };
+  if (v.cut && v.color) return { title: cutTitle(v.cut), sub: colorTitle(v.color), dot: `background:${colorSw(v.color)}` };
   if (v.cut) return { title: cutTitle(v.cut), sub: cutSub(v.cut) || '-', icon: svg('cut') };
-  return { title: colorTitle(v.color), sub: colorNote(v.color), dot: `background:${swatchCss(v.color.tone, v.color.reflet ?? 0)}` };
+  return { title: colorTitle(v.color), sub: colorNote(v.color), dot: `background:${colorSw(v.color)}` };
 }
 function tabLabel(i) { const n = pad(i + 1); return S.svc.cut && S.svc.color ? t('render', { n }) : S.svc.cut ? t('cutN', { n }) : t('colorN', { n }); }
 function nextChoice() { return S.svc.cut ? 'cut' : 'color'; }
@@ -309,7 +340,7 @@ async function computeRenders() {
       if (preset) { base = await E.canvasFromUrl(preset.photo); mask = await E.maskFromUrl(preset.mask, base.width, base.height); demoUsed = true; }
       else cutPending = true;
     }
-    if (color && mask) base = E.recolor(base, mask, color.tone, color.reflet ?? 0);
+    if (color && mask) base = E.recolor(base, mask, color.tone, color.reflet ?? 0, 0.92, color.reflet2 ?? null);
     out.push({ url: base.toDataURL('image/jpeg', 0.9), canvas: base, cut, color, demoUsed, cutPending });
   }
   return out;
@@ -435,12 +466,36 @@ const A = {
   addCard: d => { const list = d.kind === 'cut' ? S.cuts : S.colors; list.push({}); S.open[d.kind] = list.length - 1; render(); },
   removeCard: d => { const list = d.kind === 'cut' ? S.cuts : S.colors; list.splice(+d.i, 1); S.open[d.kind] = 0; render(); },
   cutSheet: d => { sheet = { kind: 'cut', i: +d.i, k: d.k, sel: S.cuts[+d.i][d.k] ?? null }; render(); },
-  toneSheet: d => { sheet = { kind: 'tone', i: +d.i, sel: S.colors[+d.i].tone ?? null }; render(); },
+  toneSheet: d => { const c = S.colors[+d.i]; sheet = { kind: 'tone', i: +d.i, sel: c.custom || (c.tone ?? null) }; render(); },
   refletSheet: d => { sheet = { kind: 'reflet', i: +d.i, sel: S.colors[+d.i].reflet ?? null }; render(); },
-  pick: d => { sheet.sel = sheet.kind === 'cut' ? d.v : +d.v; render(); },
+  newColor: () => { sheet = { kind: 'customColor', id: null, name: '', tone: null, reflet: 0, reflet2: null }; render(); },
+  editColor: d => { const x = store.custom.colors.find(y => y.id === d.id); sheet = { kind: 'customColor', id: x.id, name: x.name, tone: x.tone, reflet: x.reflet ?? 0, reflet2: x.reflet2 ?? null }; render(); },
+  ccPick: d => { sheet[d.f] = d.v === '' ? null : +d.v; if (sheet.reflet2 === sheet.reflet) sheet.reflet2 = null; render(); },
+  ccSave: () => {
+    const v = { name: sheet.name.trim(), tone: sheet.tone, reflet: sheet.reflet ?? 0, reflet2: sheet.reflet2 ?? null };
+    if (sheet.id) Object.assign(store.custom.colors.find(y => y.id === sheet.id), v); else store.custom.colors.push({ id: uid(), ...v });
+    save(); sheet = null; toast(t('savedItem'));
+  },
+  newCut: d => { sheet = { kind: 'customCut', set: d.set, id: null, name: '', desc: '' }; render(); },
+  editCut: d => { const x = store.custom.cuts[d.set].find(y => y.id === d.id); sheet = { kind: 'customCut', set: d.set, id: x.id, name: x.name, desc: x.desc || '' }; render(); },
+  cuSave: () => {
+    const v = { name: sheet.name.trim(), desc: sheet.desc.trim() }, list = store.custom.cuts[sheet.set];
+    if (sheet.id) Object.assign(list.find(y => y.id === sheet.id), v); else list.push({ id: uid(), ...v });
+    C.applyCustomCuts(store.custom.cuts); save(); sheet = null; toast(t('savedItem'));
+  },
+  customDelete: () => {
+    if (sheet.kind === 'customColor') { store.custom.colors = store.custom.colors.filter(y => y.id !== sheet.id); store.hidden = store.hidden.filter(k => k !== 'ucolor:' + sheet.id); }
+    else { store.custom.cuts[sheet.set] = store.custom.cuts[sheet.set].filter(y => y.id !== sheet.id); store.hidden = store.hidden.filter(k => !k.endsWith(':' + sheet.id)); C.applyCustomCuts(store.custom.cuts); }
+    save(); sheet = null; toast(t('deleted'));
+  },
+  pick: d => { sheet.sel = sheet.kind === 'cut' || /^u/.test(d.v) ? d.v : +d.v; render(); },
   closeSheet: () => { sheet = null; render(); },
   sheetOk: () => {
-    if (sheet.kind === 'tone') { S.colors[sheet.i].tone = sheet.sel; }
+    if (sheet.kind === 'tone') {
+      const mine = typeof sheet.sel === 'string' && store.custom.colors.find(x => x.id === sheet.sel);
+      if (mine) S.colors[sheet.i] = { custom: mine.id, name: mine.name, tone: mine.tone, reflet: mine.reflet ?? 0, reflet2: mine.reflet2 ?? null };
+      else { const prev = S.colors[sheet.i]; S.colors[sheet.i] = prev.custom ? { tone: sheet.sel } : Object.assign(prev, { tone: sheet.sel }); }
+    }
     else if (sheet.kind === 'reflet') { S.colors[sheet.i].reflet = sheet.sel; }
     else if (sheet.kind === 'cut') {
       const cut = S.cuts[sheet.i]; cut[sheet.k] = sheet.sel;
@@ -484,7 +539,7 @@ function saveProfileField(inp) {
   inp.classList.remove('invalid'); inp.removeAttribute('aria-invalid');
   store.account = store.account || {}; store.account[k] = v; if (k === 'first') store.pro = v; save();
 }
-$app.addEventListener('input', e => { if (e.target.dataset.set) return saveProfileField(e.target); if (e.target.dataset.otp !== undefined) otpPaint(e.target); if (e.target.dataset.f) { const k = e.target.dataset.f; F[k] = e.target.value; const ready = READY[route.name], cta = ready && $app.querySelector('.foot .btn.primary'); if (cta) cta.disabled = !ready(); if (F.err && (F.err[k] || F.err.form)) { delete F.err[k]; delete F.err.form; e.target.classList.remove('invalid'); e.target.removeAttribute('aria-invalid'); e.target.closest('.field')?.querySelector('.err')?.remove(); $app.querySelector('p.err[role=alert]')?.remove(); } return; } const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'brushSize') route.size = +e.target.value; });
+$app.addEventListener('input', e => { if (e.target.dataset.set) return saveProfileField(e.target); if (e.target.dataset.sheet && sheet) { sheet[e.target.dataset.sheet] = e.target.value; const ok = $app.querySelector('.sheet [data-a=ccSave], .sheet [data-a=cuSave]'); if (ok) ok.disabled = !(sheet.name.trim() && (sheet.kind !== 'customColor' || sheet.tone)); return; } if (e.target.dataset.otp !== undefined) otpPaint(e.target); if (e.target.dataset.f) { const k = e.target.dataset.f; F[k] = e.target.value; const ready = READY[route.name], cta = ready && $app.querySelector('.foot .btn.primary'); if (cta) cta.disabled = !ready(); if (F.err && (F.err[k] || F.err.form)) { delete F.err[k]; delete F.err.form; e.target.classList.remove('invalid'); e.target.removeAttribute('aria-invalid'); e.target.closest('.field')?.querySelector('.err')?.remove(); $app.querySelector('p.err[role=alert]')?.remove(); } return; } const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'brushSize') route.size = +e.target.value; });
 $app.addEventListener('focusin', e => { if (e.target.dataset.otp !== undefined) e.target.closest('.otp').classList.add('focus'); });
 $app.addEventListener('focusout', e => { if (e.target.dataset.otp !== undefined) e.target.closest('.otp').classList.remove('focus'); });
 $app.addEventListener('click', e => { if (e.target.dataset.otp !== undefined) otpDemoFill(e.target); });
@@ -506,6 +561,7 @@ function render() {
   $app.innerHTML = html + sheetHtml() + (toastMsg ? `<div class="toast" role="status">${esc(toastMsg)}</div>` : '');
   const newVid = $app.querySelector('.splash-video'); if (oldVid && newVid) newVid.replaceWith(oldVid); // la vidéo continue au lieu de repartir du début
   if (mainY) { const m = $app.querySelector('.main'); if (m) m.scrollTop = mainY; }
+  if (sameSheet) $app.querySelectorAll('.sheet, .veil').forEach(el => el.classList.add('stay')); // pas de nouvelle animation d'ouverture
   if (sheetY) { const b = $app.querySelector('.sheet .body'); if (b) b.scrollTop = sheetY; }
   lastRoute = route; lastSheet = sheet ? sheet.kind : null;
   if (route.name === 'brush') mountBrush();
