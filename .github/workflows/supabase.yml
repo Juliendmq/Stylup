@@ -25,4 +25,4 @@ jobs:
           version: latest
       - name: Déployer la fonction render
         if: steps.check.outputs.ok == '1'
-        run: supabase functions deploy render --project-ref "$PROJECT_REF" --no-verify-jwt
+        run: supabase functions deploy render --project-ref "$PROJECT_REF"

@@ -118,5 +118,3 @@ Deno.serve(async (req) => {
     clearTimeout(timer);
   }
 });
-
-export { buildPrompt };

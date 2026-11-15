@@ -1,8 +1,8 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151412';
-import * as C from './catalog.js?v=202611151412';
-import { RENDER } from './config.js?v=202611151412';
-import * as E from './engine.js?v=202611151412';
+import { STR } from './i18n.js?v=202611151420';
+import * as C from './catalog.js?v=202611151420';
+import { RENDER } from './config.js?v=202611151420';
+import * as E from './engine.js?v=202611151420';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -343,7 +343,11 @@ function tabLabel(i) { const n = pad(i + 1); return S.svc.cut && S.svc.color ? t
 function nextChoice() { return S.svc.cut ? 'cut' : 'color'; }
 
 // Rendu génératif (coupe, et couleur quand il y a aussi une coupe) via la fonction Supabase → Nano Banana 2
-const renderMode = () => /[?&]render=mock\b/.test(location.search) ? 'mock' : RENDER.enabled && RENDER.url ? 'live' : null;
+// Le service n'est utilisé que s'il confirme que la clé Gemini est en place (vérifié une fois au démarrage)
+let renderReady = false;
+if (RENDER.enabled && RENDER.url) fetch(RENDER.url, { headers: { apikey: RENDER.anonKey, Authorization: `Bearer ${RENDER.anonKey}` } })
+  .then(r => r.json()).then(j => { renderReady = !!(j && j.configured); }).catch(() => {});
+const renderMode = () => /[?&]render=mock\b/.test(location.search) ? 'mock' : renderReady ? 'live' : null;
 let renderAbort = null;
 function renderPayload(cut, color) {
   const en = o => C.label(o, 'en'), enDesc = o => C.describe(o, 'en');
