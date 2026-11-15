@@ -1,8 +1,9 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151420';
-import * as C from './catalog.js?v=202611151420';
-import { RENDER } from './config.js?v=202611151420';
-import * as E from './engine.js?v=202611151420';
+import { STR } from './i18n.js?v=202611151425';
+import * as C from './catalog.js?v=202611151425';
+import * as Cloud from './cloud.js?v=202611151425';
+import { RENDER } from './config.js?v=202611151425';
+import * as E from './engine.js?v=202611151425';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -35,7 +36,7 @@ const ICON = {
 const svg = (k, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
 const swatchCss = (tone, reflet = 0) => C.lockGradient(C.colorOf(tone, reflet));
 const colorSw = c => swatchCss(c.tone, c.reflet ?? 0);
-const uid = () => 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+const uid = () => 'u' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
 const fmtDate = ts => new Intl.DateTimeFormat(store.lang, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(ts));
 
 function go(name, params = {}, mode = 'push') { if (mode === 'push') stack.push(route); route = { name, ...params }; sheet = null; render(); $app.querySelector('.main')?.scrollTo(0, 0); }
@@ -74,7 +75,7 @@ const otpPaint = inp => {
 // PROTOTYPE UNIQUEMENT : aucun e-mail n'est envoyé, donc toucher le champ y « reçoit » le code fictif 123456, chiffre par chiffre.
 let otpDemoTimer = 0;
 const otpDemoFill = inp => {
-  if (inp.value || otpDemoTimer) return;
+  if (Cloud.online || inp.value || otpDemoTimer) return;
   let i = 0; otpDemoTimer = setInterval(() => { inp.value = '123456'.slice(0, ++i); otpPaint(inp); if (i >= 6) { clearInterval(otpDemoTimer); otpDemoTimer = 0; } }, 70);
 };
 const formErr = () => F.err && F.err.form ? `<p class="err" role="alert" style="margin:0">${esc(F.err.form)}</p>` : '';
@@ -102,7 +103,7 @@ const SCREENS = {
 
   verify: () => {
     const left = Math.max(0, Math.ceil(((F.resendAt || 0) - Date.now()) / 1000));
-    return `<div class="screen">${top(t('verifyTitle'))}<main class="main"><div class="hero"><h2>${t('verifyHead')}</h2><p class="muted">${t('verifySub', { email: `<strong>${esc(F.email)}</strong>` })}</p></div>
+    return `<div class="screen">${top(t(F.mode === 'recovery' ? 'forgotTitle' : 'verifyTitle'))}<main class="main"><div class="hero"><h2>${t('verifyHead')}</h2><p class="muted">${t('verifySub', { email: `<strong>${esc(F.email)}</strong>` })}</p></div>
     ${otpField()}
     <button class="link" data-a="resend" id="resendBtn" ${left ? 'disabled' : ''}>${left ? t('resendIn', { n: left }) : t('resend')}</button>
     </main>${authFoot(pbtn(t('confirmBtn'), 'verifyOk'))}</div>`;
@@ -433,6 +434,45 @@ async function hashPass(email, pass) {
   catch (e) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return 'x' + h; }
 }
 const fail = errs => { F.err = errs; render(); const k = Object.keys(errs)[0]; document.getElementById('f-' + k)?.focus(); };
+// ---------- Supabase ----------
+// Écritures en arrière-plan : l'écran ne bloque pas, un message s'affiche si l'enregistrement échoue
+const sync = (fn) => { if (!Cloud.online || !store.account || !store.account.salonId) return; Promise.resolve().then(fn).catch(e => { console.warn('sync', e); toast(t('syncError')); }); };
+// Remplace le cache local par les données du compte (après connexion ou au démarrage)
+function applyCloud(d) {
+  store.account = { email: d.email, verified: true, first: d.profile.first_name || '', salonId: d.salon && d.salon.id, salon: d.salon ? d.salon.name : '', city: d.salon ? d.salon.city : '', trade: d.salon ? d.salon.trade : null };
+  if (d.profile.first_name) store.pro = d.profile.first_name;
+  if (d.profile.lang && C.LANGS.includes(d.profile.lang)) store.lang = d.profile.lang;
+  store.custom = Cloud.toCustom(d.items); store.hidden = d.hidden; store.sessions = d.sessions;
+  C.applyCustomCuts(store.custom.cuts); save();
+}
+// Après connexion : charge le compte puis va à l'accueil (ou à « Votre établissement » si pas encore de salon)
+async function afterSignIn() {
+  let d; try { d = await Cloud.loadAll(); } catch (e) { return toast(t('errNetwork')); }
+  if (!d) return;
+  applyCloud(d);
+  if (!d.salon) { F = { first: d.profile.first_name || '', salon: '', city: '', trade: null }; stack = [{ name: 'splash' }]; route = { name: 'salonSetup' }; return render(); }
+  enterApp();
+}
+// Premier passage sur Supabase : on envoie le catalogue maison créé sur cet appareil (ids « u… » non-UUID renouvelés)
+async function migrateLocalCatalog(salonId) {
+  const isUuid = id => /^u[0-9a-f-]{36}$/.test(id);
+  const c = store.custom, idMap = {};
+  const fix = it => { if (!isUuid(it.id)) { const n = uid(); idMap[it.id] = n; it.id = n; } return it; };
+  c.colors.forEach(fix); c.cuts.f.forEach(fix); c.cuts.h.forEach(fix);
+  store.hidden = store.hidden.map(k => k.replace(/u[0-9a-z-]+$/, m => idMap[m] || m));
+  await Promise.all([
+    ...c.colors.map((x, i) => Cloud.saveItem(salonId, 'color', x, i)),
+    ...c.cuts.f.map((x, i) => Cloud.saveItem(salonId, 'cut_f', x, i)),
+    ...c.cuts.h.map((x, i) => Cloud.saveItem(salonId, 'cut_h', x, i)),
+    ...store.hidden.map(k => Cloud.setHidden(salonId, k, true)),
+  ]).catch(e => console.warn('migration', e));
+  C.applyCustomCuts(c.cuts); save();
+}
+const cloudErr = (code, field) => {
+  const msg = { login: 'errLogin', exists: 'errExists', code: 'errCode', weak: 'errPass', rate: 'errRate', network: 'errNetwork' }[code] || 'errUnknown';
+  return fail(field && (code === 'exists' || code === 'code' || code === 'weak') ? { [field]: t(msg) } : { form: t(msg) });
+};
+
 const enterApp = () => { store.loggedIn = true; store.started = true; save(); F = {}; stack = []; route = { name: 'home' }; render(); };
 setInterval(() => { if (route.name !== 'verify') return; const b = document.getElementById('resendBtn'); if (!b) return; const left = Math.max(0, Math.ceil(((F.resendAt || 0) - Date.now()) / 1000)); b.disabled = !!left; b.textContent = left ? t('resendIn', { n: left }) : t('resend'); }, 1000);
 
@@ -448,19 +488,45 @@ const A = {
     if (!passOk(F.pass)) errs.pass = t('errPass');
     if (!errs.email && store.account && store.account.verified && store.account.email.toLowerCase() === email.toLowerCase()) errs.email = t('errExists');
     if (Object.keys(errs).length) return fail(errs);
+    if (Cloud.online) {
+      const r = await Cloud.signUp(email, F.pass, store.lang);
+      if (r.error) return cloudErr(r.error, r.error === 'weak' ? 'pass' : 'email');
+      if (r.session) return afterSignIn(); // confirmation e-mail désactivée côté Supabase
+      F = { email, code: '', mode: 'signup', resendAt: Date.now() + 60000 }; return go('verify');
+    }
     store.account = { email, hash: await hashPass(email, F.pass), verified: false }; save();
     F = { email, code: '', resendAt: Date.now() + 30000 }; go('verify');
   },
-  resend: () => { F.resendAt = Date.now() + 30000; F.err = null; toast(t('resent')); },
-  verifyOk: () => {
+  resend: async () => {
+    if (Cloud.online) { const r = await Cloud.resendCode(F.email, F.mode); if (r.error) return cloudErr(r.error); F.resendAt = Date.now() + 60000; }
+    else F.resendAt = Date.now() + 30000;
+    F.err = null; toast(t('resent'));
+  },
+  verifyOk: async () => {
+    if (Cloud.online) {
+      const code = (F.code || '').replace(/\D/g, ''); if (code.length !== 6) return fail({ code: t('errCode') });
+      const r = await Cloud.verifyCode(F.email, code, F.mode);
+      if (r.error) return cloudErr(r.error, 'code');
+      if (F.mode === 'recovery') { F = { sentTo: F.email }; return go('reset', {}, 'replace'); }
+      return afterSignIn();
+    }
     if ((F.code || '').replace(/\D/g, '') !== '123456') return fail({ code: t('errCode') });
     store.account.verified = true; save();
     F = { first: store.account.first || '', salon: store.account.salon || '', city: store.account.city || '' }; go('salonSetup', {}, 'replace');
   },
   trade: d => { F.trade = d.v; render(); },
-  salonOk: () => {
+  salonOk: async () => {
     const errs = {}; ['first', 'salon', 'city'].forEach(k => { if (!(F[k] || '').trim()) errs[k] = t('errRequired'); });
     if (Object.keys(errs).length || !F.trade) return fail(errs);
+    if (Cloud.online) {
+      try {
+        const salon = await Cloud.createSalon({ name: F.salon.trim(), city: F.city.trim(), trade: F.trade });
+        await Cloud.saveProfile({ first_name: F.first.trim(), lang: store.lang });
+        Object.assign(store.account, { first: F.first.trim(), salon: salon.name, city: salon.city, trade: salon.trade, salonId: salon.id }); store.pro = F.first.trim();
+        await migrateLocalCatalog(salon.id);
+        return enterApp();
+      } catch (e) { console.warn(e); return fail({ form: t('errNetwork') }); }
+    }
     Object.assign(store.account, { first: F.first.trim(), salon: F.salon.trim(), city: F.city.trim(), trade: F.trade }); store.pro = F.first.trim(); enterApp();
   },
   loginOk: async () => {
@@ -468,6 +534,12 @@ const A = {
     if (!EMAIL_RE.test(email)) errs.email = t('errEmail');
     if (!F.pass) errs.pass = t('errRequired');
     if (Object.keys(errs).length) return fail(errs);
+    if (Cloud.online) {
+      const r = await Cloud.signIn(email, F.pass);
+      if (r.error === 'unconfirmed') { await Cloud.resendCode(email, 'signup'); F = { email, code: '', mode: 'signup', resendAt: Date.now() + 60000 }; return go('verify'); }
+      if (r.error) return cloudErr(r.error);
+      return afterSignIn();
+    }
     const acc = store.account;
     if (!acc || acc.email.toLowerCase() !== email.toLowerCase() || acc.hash !== await hashPass(email, F.pass)) return fail({ form: t('errLogin') });
     if (!acc.verified) { F = { email, code: '', resendAt: Date.now() + 30000 }; return go('verify'); }
@@ -475,7 +547,11 @@ const A = {
     store.pro = acc.first || store.pro; enterApp();
   },
   toForgot: () => { F = { email: F.email || '' }; go('forgot'); },
-  forgotOk: () => { const email = (F.email || '').trim(); if (!EMAIL_RE.test(email)) return fail({ email: t('errEmail') }); F = { sentTo: email }; go('forgotSent'); },
+  forgotOk: async () => {
+    const email = (F.email || '').trim(); if (!EMAIL_RE.test(email)) return fail({ email: t('errEmail') });
+    if (Cloud.online) { const r = await Cloud.sendRecovery(email); if (r.error) return cloudErr(r.error); F = { email, code: '', mode: 'recovery', resendAt: Date.now() + 60000 }; return go('verify'); }
+    F = { sentTo: email }; go('forgotSent');
+  },
   openLink: () => { F = { sentTo: F.sentTo }; go('reset'); },
   backLogin: () => { F = { email: F.sentTo || '' }; stack = [{ name: 'splash' }]; route = { name: 'login' }; render(); },
   resetOk: async () => {
@@ -483,15 +559,18 @@ const A = {
     if (!passOk(F.newPass)) errs.newPass = t('errPass');
     else if (F.newPass !== F.newPass2) errs.newPass2 = t('errMatch');
     if (Object.keys(errs).length) return fail(errs);
+    if (Cloud.online) { const r = await Cloud.updatePassword(F.newPass); if (r.error) return cloudErr(r.error, r.error === 'weak' ? 'newPass' : null); toast(t('passChanged')); return afterSignIn(); }
     const acc = store.account;
     if (acc && acc.email.toLowerCase() === (F.sentTo || '').toLowerCase()) { acc.hash = await hashPass(acc.email, F.newPass); save(); }
     const email = F.sentTo; F = { email }; stack = [{ name: 'splash' }]; route = { name: 'login' }; toast(t('passChanged'));
   },
-  logout: () => { store.loggedIn = false; save(); S = null; F = {}; stack = []; route = { name: 'splash' }; render(); },
+  logout: async () => {
+    if (Cloud.online) { await Cloud.signOut(); Object.assign(store, { account: null, sessions: [], hidden: [], custom: { colors: [], cuts: { f: [], h: [] } } }); C.applyCustomCuts(store.custom.cuts); }
+    store.loggedIn = false; save(); S = null; F = {}; stack = []; route = { name: 'splash' }; render(); },
   catSub: d => { route = { ...route, sub: d.s }; render(); },
   tab: d => { stack = []; route = { name: d.r }; sheet = null; render(); },
   langSheet: () => { sheet = { kind: 'lang' }; render(); },
-  setLang: d => { store.lang = d.l; save(); if (sheet && sheet.kind === 'lang') sheet = null; render(); },
+  setLang: d => { store.lang = d.l; save(); sync(() => Cloud.saveProfile({ lang: d.l })); if (sheet && sheet.kind === 'lang') sheet = null; render(); },
   newSession: () => { newSession(); go('client'); },
   gender: d => { S.gender = d.g; S.cutSet = cutSetFor(d.g); S.cuts = [{}]; render(); },
   toServices: () => go('services'),
@@ -522,19 +601,22 @@ const A = {
   ccPick: d => { sheet[d.f] = +d.v; render(); },
   ccSave: () => {
     const v = { name: sheet.name.trim(), tone: sheet.tone, reflet: sheet.reflet ?? 0 };
-    if (sheet.id) Object.assign(store.custom.colors.find(y => y.id === sheet.id), v); else store.custom.colors.push({ id: uid(), ...v });
+    let item; if (sheet.id) { item = store.custom.colors.find(y => y.id === sheet.id); Object.assign(item, v); } else store.custom.colors.push(item = { id: uid(), ...v });
+    const pos = store.custom.colors.indexOf(item); sync(() => Cloud.saveItem(store.account.salonId, 'color', item, pos));
     save(); sheet = null; toast(t('savedItem'));
   },
   newCut: d => { sheet = { kind: 'customCut', set: d.set, id: null, name: '', desc: '' }; render(); },
   editCut: d => { const x = store.custom.cuts[d.set].find(y => y.id === d.id); sheet = { kind: 'customCut', set: d.set, id: x.id, name: x.name, desc: x.desc || '' }; render(); },
   cuSave: () => {
     const v = { name: sheet.name.trim(), desc: sheet.desc.trim() }, list = store.custom.cuts[sheet.set];
-    if (sheet.id) Object.assign(list.find(y => y.id === sheet.id), v); else list.push({ id: uid(), ...v });
+    let item; if (sheet.id) { item = list.find(y => y.id === sheet.id); Object.assign(item, v); } else list.push(item = { id: uid(), ...v });
+    const kind = sheet.set === 'h' ? 'cut_h' : 'cut_f', pos = list.indexOf(item); sync(() => Cloud.saveItem(store.account.salonId, kind, item, pos));
     C.applyCustomCuts(store.custom.cuts); save(); sheet = null; toast(t('savedItem'));
   },
   customDelete: () => {
     if (sheet.kind === 'customColor') { store.custom.colors = store.custom.colors.filter(y => y.id !== sheet.id); store.hidden = store.hidden.filter(k => k !== 'ucolor:' + sheet.id); }
     else { store.custom.cuts[sheet.set] = store.custom.cuts[sheet.set].filter(y => y.id !== sheet.id); store.hidden = store.hidden.filter(k => !k.endsWith(':' + sheet.id)); C.applyCustomCuts(store.custom.cuts); }
+    const gone = sheet.id; sync(async () => { await Cloud.deleteItem(gone); const keys = [`ucolor:${gone}`, `f:shape:${gone}`, `h:style:${gone}`]; for (const k of keys) await Cloud.setHidden(store.account.salonId, k, false); });
     save(); sheet = null; toast(t('deleted'));
   },
   pick: d => { sheet.sel = sheet.kind === 'cut' || /^u/.test(d.v) ? d.v : +d.v; render(); },
@@ -566,16 +648,18 @@ const A = {
   finish: () => {
     const v = S.renders[S.chosen]; const info = infoOf(v);
     const svcLabel = [S.svc.cut && t('svcCut'), S.svc.color && t('svcColor')].filter(Boolean).join(' + ');
-    store.sessions.unshift({ id: Date.now(), date: Date.now(), first: S.first.trim(), svcLabel, title: info.title, sub: info.sub, thumb: E.thumb(v.canvas, 360, 0.8), after: S.after, rating: S.rating });
+    const entry = { id: Date.now(), date: Date.now(), first: S.first.trim(), svcLabel, services: [S.svc.cut && 'cut', S.svc.color && 'color'].filter(Boolean), gender: S.gender, title: info.title, sub: info.sub, thumb: E.thumb(v.canvas, 360, 0.8), after: S.after, rating: S.rating };
+    store.sessions.unshift(entry);
+    sync(async () => { const r = await Cloud.addSession(store.account.salonId, entry); entry.rid = r.rid; entry.paths = r.paths; save(); });
     store.sessions = store.sessions.slice(0, 40); if (!save()) { store.sessions.pop(); save(); }
     S = null; stack = []; route = { name: 'home' }; toast(t('saved'));
   },
   openSession: d => go('session', { i: +d.i }),
-  deleteSession: d => { store.sessions.splice(+d.i, 1); save(); back(); },
+  deleteSession: d => { const [s] = store.sessions.splice(+d.i, 1); save(); back(); if (s && s.rid) sync(() => Cloud.deleteSession(s.rid, s.paths)); },
   abandon: () => { sheet = { kind: 'abandon' }; render(); },
   abandonYes: () => { S = null; brush = null; stack = []; route = { name: 'home' }; sheet = null; render(); },
-  hide: d => { const i = store.hidden.indexOf(d.k); if (i >= 0) store.hidden.splice(i, 1); else store.hidden.push(d.k); save(); render(); },
-  clearAll: () => { store.sessions = []; save(); toast(t('cleared')); },
+  hide: d => { const i = store.hidden.indexOf(d.k); if (i >= 0) store.hidden.splice(i, 1); else store.hidden.push(d.k); save(); render(); const on = i < 0; sync(() => Cloud.setHidden(store.account.salonId, d.k, on)); },
+  clearAll: () => { store.sessions = []; save(); toast(t('cleared')); sync(() => Cloud.clearSessions(store.account.salonId)); },
 };
 
 $app.addEventListener('click', e => { const eye = e.target.closest('[data-eye]'); if (eye) { e.preventDefault(); const inp = document.getElementById(eye.dataset.eye); inp.type = inp.type === 'password' ? 'text' : 'password'; eye.setAttribute('aria-label', inp.type === 'password' ? t('show') : t('hide')); eye.classList.toggle('on', inp.type === 'text'); return; } const el = e.target.closest('[data-a]'); if (!el || el.disabled) return; if (el.dataset.a === 'closeSheet' && el.classList.contains('sheet')) return; const f = A[el.dataset.a]; if (f) { e.preventDefault(); f(el.dataset, el); } });
@@ -587,7 +671,9 @@ function saveProfileField(inp) {
   if (!v) { inp.classList.add('invalid'); inp.setAttribute('aria-invalid', 'true'); field.insertAdjacentHTML('beforeend', `<span class="err">${esc(t('errRequired'))}</span>`); return; }
   inp.classList.remove('invalid'); inp.removeAttribute('aria-invalid');
   store.account = store.account || {}; store.account[k] = v; if (k === 'first') store.pro = v; save();
+  clearTimeout(profileTimer[k]); profileTimer[k] = setTimeout(() => sync(() => k === 'first' ? Cloud.saveProfile({ first_name: v }) : Cloud.updateSalon(store.account.salonId, { [k === 'salon' ? 'name' : 'city']: v })), 700);
 }
+const profileTimer = {};
 $app.addEventListener('input', e => { if (e.target.dataset.set) return saveProfileField(e.target); if (e.target.dataset.sheet && sheet) { sheet[e.target.dataset.sheet] = e.target.value; const ok = $app.querySelector('.sheet [data-a=ccSave], .sheet [data-a=cuSave]'); if (ok) ok.disabled = !(sheet.name.trim() && (sheet.kind !== 'customColor' || sheet.tone)); return; } if (e.target.dataset.otp !== undefined) otpPaint(e.target); if (e.target.dataset.f) { const k = e.target.dataset.f; F[k] = e.target.value; const ready = READY[route.name], cta = ready && $app.querySelector('.foot .btn.primary'); if (cta) cta.disabled = !ready(); if (F.err && (F.err[k] || F.err.form)) { delete F.err[k]; delete F.err.form; e.target.classList.remove('invalid'); e.target.removeAttribute('aria-invalid'); e.target.closest('.field')?.querySelector('.err')?.remove(); $app.querySelector('p.err[role=alert]')?.remove(); } return; } const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'brushSize') route.size = +e.target.value; });
 $app.addEventListener('focusin', e => { if (e.target.dataset.otp !== undefined) e.target.closest('.otp').classList.add('focus'); });
 $app.addEventListener('focusout', e => { if (e.target.dataset.otp !== undefined) e.target.closest('.otp').classList.remove('focus'); });
@@ -617,4 +703,16 @@ function render() {
   const v = $app.querySelector('.splash-video'); if (v) { if (matchMedia('(prefers-reduced-motion: reduce)').matches) v.pause(); else v.play().catch(() => {}); }
 }
 render();
+// Démarrage : si Supabase répond, la session du compte (gardée sur l'appareil) remplace le mode local
+Cloud.init().then(async ok => {
+  if (!ok) return;
+  const user = await Cloud.currentUser();
+  if (!user) { if (store.loggedIn) { store.loggedIn = false; store.account = null; save(); stack = []; route = { name: 'splash' }; render(); } return; }
+  try {
+    const d = await Cloud.loadAll(); applyCloud(d);
+    if (!d.salon) { F = { first: d.profile.first_name || '', salon: '', city: '', trade: null }; stack = [{ name: 'splash' }]; route = { name: 'salonSetup' }; return render(); }
+    if (!store.loggedIn) return enterApp();
+    if (!S) render();
+  } catch (e) { console.warn('load', e); }
+});
 window.__stylup = { get S() { return S; }, get route() { return route; }, A };
