@@ -2,7 +2,6 @@
 import { STR } from './i18n.js';
 import * as C from './catalog.js';
 import * as E from './engine.js';
-import { LOGO_D, LOGO_BRUSH, LOGO_BRUSH_END } from './logo.js';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -51,13 +50,10 @@ const formErr = () => F.err && F.err.form ? `<p class="err" role="alert" style="
 const authFoot = (primary, extra = '') => `<footer class="foot">${primary}${extra}</footer>`;
 const langPill = () => `<button class="pill" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog">${langLabel(store.lang)}<span class="chev-s">${svg('down', 14)}</span></button>`;
 
-// Le logo se dessine une seule fois, au premier affichage du splash après l'ouverture de l'app
-let logoDrawn = false, logoT0 = 0, logoTimer = 0;
-
 const SCREENS = {
   splash: () => `<div class="splash"><video class="splash-video" autoplay muted loop playsinline preload="auto" poster="assets/splash-bg.jpg" src="assets/splash.mp4" aria-hidden="true"></video><div class="splash-veil"></div>
     <div class="splash-content"><header class="splash-top"><button class="pill glass" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog">${langLabel(store.lang)}<span class="chev-s">${svg('down', 14)}</span></button></header>
-    <h1 class="splash-logo${logoDrawn ? '' : ' draw'}"><span class="logo-wrap" style="--end:${LOGO_BRUSH_END}s">${logoDrawn ? '' : `<svg class="logo-svg logo-brush" viewBox="0 0 266 155" aria-hidden="true"><defs><clipPath id="logo-clip"><path d="${LOGO_D}"/></clipPath></defs><g clip-path="url(#logo-clip)">${LOGO_BRUSH.map(b => `<path pathLength="1" d="${b.d}" style="stroke-width:${b.w};--d:${b.delay}s;--t:${b.dur}s"/>`).join('')}</g></svg>`}<svg class="logo-svg logo-full" viewBox="0 0 266 155" width="266" height="155" role="img" aria-label="Stylup"><path d="${LOGO_D}"/></svg></span></h1>
+    <h1 class="splash-logo"><img src="assets/stylup-logo.svg" alt="Stylup" width="266" height="155"></h1>
     <footer class="splash-foot">${pbtn(t('splashCreate'), 'toSignup')}<button class="btn ghost" data-a="toLogin">${t('splashLogin')}</button></footer></div></div>`,
 
   signup: () => `<div class="screen">${top(t('signupTitle'))}<main class="main">
@@ -459,17 +455,9 @@ function render() {
   document.documentElement.lang = store.lang;
   if (!S && !['splash', 'home', 'catalog', 'settings', 'session', 'signup', 'verify', 'salonSetup', 'login', 'forgot', 'forgotSent', 'reset'].includes(route.name)) route = { name: store.loggedIn ? 'home' : 'splash' };
   const html = (SCREENS[route.name] || SCREENS.home)();
-  const oldVid = $app.querySelector('.splash-video'), oldLogo = $app.querySelector('.splash-logo');
+  const oldVid = $app.querySelector('.splash-video');
   $app.innerHTML = html + sheetHtml() + (toastMsg ? `<div class="toast" role="status">${esc(toastMsg)}</div>` : '');
   const newVid = $app.querySelector('.splash-video'); if (oldVid && newVid) newVid.replaceWith(oldVid); // la vidéo continue au lieu de repartir du début
-  const newLogo = $app.querySelector('.splash-logo'); if (oldLogo && newLogo) newLogo.replaceWith(oldLogo); // l'animation du logo ne repart pas
-  if (newLogo) logoDrawn = true;
-  const lg = $app.querySelector('.splash-logo.draw');
-  if (lg) { // un nouveau rendu réinsère le logo : on reprend l'animation là où elle en était
-    logoT0 = logoT0 || performance.now();
-    const el = (performance.now() - logoT0) / 1000;
-    if (el > LOGO_BRUSH_END + .45) lg.classList.remove('draw'); else { lg.style.setProperty('--el', `${el}s`); clearTimeout(logoTimer); logoTimer = setTimeout(() => lg.classList.remove('draw'), (LOGO_BRUSH_END + .5 - el) * 1000); }
-  }
   if (route.name === 'brush') mountBrush();
   const v = $app.querySelector('.splash-video'); if (v) { if (matchMedia('(prefers-reduced-motion: reduce)').matches) v.pause(); else v.play().catch(() => {}); }
 }

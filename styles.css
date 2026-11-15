@@ -156,20 +156,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .pill.glass { background: rgba(255,255,255,.1); border-color: rgba(244,238,242,.25); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .splash-logo { margin: 0; position: absolute; top: 80px; left: 0; right: 0; display: flex; justify-content: center; }
 .splash-foot { margin-top: auto; }
-/* Logo d'ouverture : écrit au pinceau, à plat. Chaque trait suit le centre d'une lettre et n'est visible qu'à
-   l'intérieur de la forme du logo ; à la fin, le logo net prend le relais en fondu court. */
-.logo-wrap { position: relative; display: block; width: 68%; max-width: 266px; filter: drop-shadow(0 6px 24px rgba(0,0,0,.25)); }
-.logo-svg { display: block; width: 100%; height: auto; overflow: visible; }
-.logo-full { position: relative; }
-.logo-full path { fill: #f4eef2; }
-.logo-brush { position: absolute; inset: 0; display: none; }
-.logo-brush path { fill: none; stroke: #f4eef2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 2; stroke-dashoffset: 1;
-  animation: logo-brush var(--t) cubic-bezier(.45,.05,.4,1) calc(var(--d) - var(--el, 0s)) both; }
-.splash-logo.draw .logo-brush { display: block; }
-.splash-logo.draw .logo-full { animation: logo-settle .35s ease calc(var(--end) - var(--el, 0s)) both; }
-@keyframes logo-brush { 0% { stroke-dashoffset: 1; stroke-opacity: 0; } 1% { stroke-opacity: 1; } 100% { stroke-dashoffset: 0; stroke-opacity: 1; } }
-@keyframes logo-settle { from { opacity: 0; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .splash-logo.draw .logo-brush { display: none; } .splash-logo.draw .logo-full { animation: none; } }
+.splash-logo img { width: 68%; max-width: 266px; height: auto; filter: drop-shadow(0 6px 24px rgba(0,0,0,.25)); }
 .splash-foot { padding: 0 24px max(24px, var(--safe-b)); display: flex; flex-direction: column; gap: 16px; }
 .splash-foot .btn.ghost { border-color: rgba(244,238,242,.35); background: rgba(23,18,28,.25); }
 .toast { position: absolute; left: 16px; right: 16px; bottom: calc(96px + var(--safe-b)); z-index: 30; background: var(--text); color: var(--bg); border-radius: 12px; padding: 12px 14px; font-weight: 500; animation: up .2s ease-out; }
