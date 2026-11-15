@@ -57,7 +57,7 @@ let logoDrawn = false, logoT0 = 0;
 const SCREENS = {
   splash: () => `<div class="splash"><video class="splash-video" autoplay muted loop playsinline preload="auto" poster="assets/splash-bg.jpg" src="assets/splash.mp4" aria-hidden="true"></video><div class="splash-veil"></div>
     <div class="splash-content"><header class="splash-top"><button class="pill glass" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog">${langLabel(store.lang)}<span class="chev-s">${svg('down', 14)}</span></button></header>
-    <h1 class="splash-logo${logoDrawn ? '' : ' draw'}"><svg class="logo-svg" viewBox="0 0 266 155" width="266" height="155" role="img" aria-label="Stylup"><path pathLength="1" d="${LOGO_D}"/></svg></h1>
+    <h1 class="splash-logo${logoDrawn ? '' : ' draw'}"><span class="logo-wrap"><svg class="logo-svg logo-line" viewBox="0 0 266 155" aria-hidden="true"><path pathLength="1" d="${LOGO_D}"/></svg><svg class="logo-svg logo-fill" viewBox="0 0 266 155" width="266" height="155" role="img" aria-label="Stylup"><path d="${LOGO_D}"/></svg></span></h1>
     <footer class="splash-foot">${pbtn(t('splashCreate'), 'toSignup')}<button class="btn ghost" data-a="toLogin">${t('splashLogin')}</button></footer></div></div>`,
 
   signup: () => `<div class="screen">${top(t('signupTitle'))}<main class="main">
@@ -468,7 +468,7 @@ function render() {
   if (lg) { // un nouveau rendu réinsère le logo : on reprend l'animation là où elle en était
     logoT0 = logoT0 || performance.now();
     const el = (performance.now() - logoT0) / 1000;
-    if (el > 2.8) lg.classList.remove('draw'); else lg.querySelector('path').style.animationDelay = `${.35 - el}s, ${2 - el}s`;
+    if (el > 2.6) lg.classList.remove('draw'); else lg.style.setProperty('--el', `${el}s`);
   }
   if (route.name === 'brush') mountBrush();
   const v = $app.querySelector('.splash-video'); if (v) { if (matchMedia('(prefers-reduced-motion: reduce)').matches) v.pause(); else v.play().catch(() => {}); }
