@@ -256,6 +256,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 /* Catalogue : choix du métier (premier niveau) */
 .tradeseg { display: flex; gap: 8px; }
 .tradeseg button { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: .9375rem; transition: background-color .15s ease, border-color .15s ease; }
+.tradeseg button:disabled { opacity: .5; cursor: default; }
 .tradeseg button[aria-selected=true] { background: var(--panel); border-color: var(--accent); color: var(--text); font-weight: 600; }
 .soon-card { align-items: flex-start; gap: 10px; }
 .soon-card h3 { font-size: 1.0625rem; }

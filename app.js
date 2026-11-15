@@ -1,7 +1,7 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151329';
-import * as C from './catalog.js?v=202611151329';
-import * as E from './engine.js?v=202611151329';
+import { STR } from './i18n.js?v=202611151331';
+import * as C from './catalog.js?v=202611151331';
+import * as E from './engine.js?v=202611151331';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -250,9 +250,10 @@ const SCREENS = {
     const add = (label, act, data = '') => `<button class="addrow" data-a="${act}" ${data}><span class="plus">${svg('plus', 18)}</span>${esc(label)}</button>`;
     const cutRows = set => store.custom.cuts[set].map(x => mine(set + ':' + C.CUSTOM_FIELD[set] + ':' + x.id, x.name, x.desc || t('customTag'), '', 'editCut', `data-set="${set}" data-id="${x.id}"`)).join('');
     // Premier niveau : le métier (Coiffure / Ongles / Cils), chaque métier a son propre catalogue
-    const trade = route.trade || (store.account && store.account.trade) || 'hair';
+    // Un salon n'a qu'une activité : celle choisie à l'inscription ; les autres sont visibles mais inactives
+    const trade = (store.account && store.account.trade) || 'hair';
     const TR = { hair: 'tradeHair', nails: 'tradeNails', lashes: 'tradeLashes' };
-    const seg = `<div class="tradeseg" role="tablist" aria-label="${t('yourTrade')}">${Object.keys(TR).map(k => `<button role="tab" data-a="catTrade" data-t="${k}" aria-selected="${trade === k}"><img src="assets/trade-${k}.svg" alt="" width="20" height="20">${t(TR[k])}</button>`).join('')}</div>`;
+    const seg = `<div class="tradeseg" role="tablist" aria-label="${t('yourTrade')}">${Object.keys(TR).map(k => `<button role="tab" aria-selected="${trade === k}" ${trade === k ? '' : 'disabled aria-disabled="true"'}><img src="assets/trade-${k}.svg" alt="" width="20" height="20">${t(TR[k])}</button>`).join('')}</div>`;
     if (trade !== 'hair') return `<div class="screen">${top(t('catalogTitle'), { noBack: true, big: true })}<main class="main">${seg}
       <section class="card soon-card"><img src="assets/trade-${trade}.svg" alt="" width="40" height="40"><h3>${t(TR[trade])} · ${t('soon')}</h3><p class="muted" style="margin:0">${t('catSoonSub', { trade: t(TR[trade]).toLowerCase() })}</p></section>
       </main>${tabbar('catalog')}</div>`;
@@ -447,7 +448,6 @@ const A = {
     const email = F.sentTo; F = { email }; stack = [{ name: 'splash' }]; route = { name: 'login' }; toast(t('passChanged'));
   },
   logout: () => { store.loggedIn = false; save(); S = null; F = {}; stack = []; route = { name: 'splash' }; render(); },
-  catTrade: d => { route = { ...route, trade: d.t }; render(); },
   tab: d => { stack = []; route = { name: d.r }; sheet = null; render(); },
   langSheet: () => { sheet = { kind: 'lang' }; render(); },
   setLang: d => { store.lang = d.l; save(); if (sheet && sheet.kind === 'lang') sheet = null; render(); },
