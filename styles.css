@@ -192,3 +192,4 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 
 .flag { font-size: 1.15em; line-height: 1; }
 .pill { display: inline-flex; align-items: center; gap: 6px; }
+.chev-s { display: inline-grid; margin-left: -2px; opacity: .8; }

@@ -20,7 +20,7 @@ const pad = n => String(n).padStart(2, '0');
 const FLAG = { fr: '🇫🇷', en: '🇬🇧', it: '🇮🇹', es: '🇪🇸', de: '🇩🇪' };
 const langLabel = l => `<span class="flag" aria-hidden="true">${FLAG[l]}</span> ${l.toUpperCase()}`;
 const ICON = {
-  back: '<path d="M15 5l-7 7 7 7"/>', right: '<path d="M9 5l7 7-7 7"/>', up: '<path d="M5 15l7-7 7 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>', down: '<path d="M6 9l6 6 6-6"/>', right: '<path d="M9 5l7 7-7 7"/>', up: '<path d="M5 15l7-7 7 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>',
   cut: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1L20 20M8.1 15.9L20 4"/>', len: '<path d="M3 16L16 3l5 5L8 21z"/><path d="M7 12l2 2M10 9l2 2M13 6l2 2"/>',
   fr: '<path d="M4 11c2-6 14-6 16 0"/><path d="M7 10v6M10.5 9v7M14 9v7M17 10v6"/>', clip: '<rect x="7" y="2" width="10" height="20" rx="3"/><path d="M7 7h10M10 2v5M14 2v5"/>',
   comb: '<path d="M3 7h18v4H3z"/><path d="M5 11v8M8.5 11v8M12 11v8M15.5 11v8M19 11v5"/>',
@@ -48,11 +48,11 @@ const fieldIn = (key, label, type = 'text', o = {}) => {
 };
 const formErr = () => F.err && F.err.form ? `<p class="err" role="alert" style="margin:0">${esc(F.err.form)}</p>` : '';
 const authFoot = (primary, extra = '') => `<footer class="foot">${primary}${extra}</footer>`;
-const langPill = () => `<button class="pill" data-a="langSheet" aria-label="${t('language')}">${langLabel(store.lang)}</button>`;
+const langPill = () => `<button class="pill" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog">${langLabel(store.lang)}<span class="chev-s">${svg('down', 14)}</span></button>`;
 
 const SCREENS = {
   splash: () => `<div class="splash"><video class="splash-video" autoplay muted loop playsinline preload="auto" poster="assets/splash-bg.jpg" src="assets/splash.mp4" aria-hidden="true"></video><div class="splash-veil"></div>
-    <div class="splash-content"><header class="splash-top"><button class="pill glass" data-a="langSheet" aria-label="${t('language')}">${langLabel(store.lang)}</button></header>
+    <div class="splash-content"><header class="splash-top"><button class="pill glass" data-a="langSheet" aria-label="${t('language')}" aria-haspopup="dialog">${langLabel(store.lang)}<span class="chev-s">${svg('down', 14)}</span></button></header>
     <h1 class="splash-logo"><img src="assets/stylup-logo.svg" alt="Stylup" width="266" height="155"></h1>
     <footer class="splash-foot">${pbtn(t('splashCreate'), 'toSignup')}<button class="btn ghost" data-a="toLogin">${t('splashLogin')}</button></footer></div></div>`,
 
