@@ -1,9 +1,9 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611161817';
-import * as C from './catalog.js?v=202611161817';
-import * as Cloud from './cloud.js?v=202611161817';
-import { RENDER } from './config.js?v=202611161817';
-import * as E from './engine.js?v=202611161817';
+import { STR } from './i18n.js?v=202611161825';
+import * as C from './catalog.js?v=202611161825';
+import * as Cloud from './cloud.js?v=202611161825';
+import { RENDER } from './config.js?v=202611161825';
+import * as E from './engine.js?v=202611161825';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -35,6 +35,9 @@ const ICON = {
 };
 const svg = (k, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
 const swatchCss = (tone, reflet = 0) => C.lockGradient(C.colorOf(tone, reflet));
+// Pictogrammes des coupes (forme femme, style homme) ; les coupes maison prennent le pictogramme Coiffure
+const CUT_ICONS = { f: ['carre-droit', 'carre-plongeant', 'lob', 'degrade', 'shag', 'wolf', 'pixie'], h: ['crop', 'crew', 'side', 'quiff', 'buzz', 'pomp', 'slick'] };
+const cutIcon = (set, field, id) => field !== C.CUSTOM_FIELD[set] ? '' : `<img class="cut-ic" src="${CUT_ICONS[set].includes(id) ? `assets/cuts/${set}-${id}.svg` : 'assets/trade-hair.svg'}" alt="" width="40" height="40">`;
 const colorSw = c => swatchCss(c.tone, c.reflet ?? 0);
 const uid = () => 'u' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
 const fmtDate = ts => new Intl.DateTimeFormat(store.lang, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(ts));
@@ -247,11 +250,11 @@ const SCREENS = {
   },
 
   catalog: () => {
-    const tog = (k, name, sw) => `<button class="trow" data-a="hide" data-k="${k}" role="switch" aria-checked="${!hidden(k)}">${sw ? `<span class="swatch" style="background:${sw}"></span>` : ''}<span class="grow" style="${hidden(k) ? 'color:var(--muted)' : ''}">${esc(name)}</span><span class="toggle ${hidden(k) ? '' : 'on'}"></span></button>`;
+    const tog = (k, name, sw, ic = '') => `<button class="trow" data-a="hide" data-k="${k}" role="switch" aria-checked="${!hidden(k)}">${sw ? `<span class="swatch" style="background:${sw}"></span>` : ''}${ic}<span class="grow" style="${hidden(k) ? 'color:var(--muted)' : ''}">${esc(name)}</span><span class="toggle ${hidden(k) ? '' : 'on'}"></span></button>`;
     // Ligne d'un élément ajouté par le salon : toucher le nom pour le modifier, l'interrupteur pour le masquer
-    const mine = (k, name, sub, sw, act, data) => `<div class="trow mine">${sw ? `<span class="swatch" style="background:${sw}"></span>` : ''}<button class="grow mine-edit" data-a="${act}" ${data} aria-label="${esc(t('edit2') + ' : ' + name)}"><span style="${hidden(k) ? 'color:var(--muted)' : ''}">${esc(name)}</span><span class="muted">${esc(sub)}</span></button><button class="tswitch" data-a="hide" data-k="${k}" role="switch" aria-checked="${!hidden(k)}" aria-label="${esc(name)}"><span class="toggle ${hidden(k) ? '' : 'on'}"></span></button></div>`;
+    const mine = (k, name, sub, sw, act, data, ic = '') => `<div class="trow mine">${sw ? `<span class="swatch" style="background:${sw}"></span>` : ''}${ic}<button class="grow mine-edit" data-a="${act}" ${data} aria-label="${esc(t('edit2') + ' : ' + name)}"><span style="${hidden(k) ? 'color:var(--muted)' : ''}">${esc(name)}</span><span class="muted">${esc(sub)}</span></button><button class="tswitch" data-a="hide" data-k="${k}" role="switch" aria-checked="${!hidden(k)}" aria-label="${esc(name)}"><span class="toggle ${hidden(k) ? '' : 'on'}"></span></button></div>`;
     const add = (label, act, data = '') => `<button class="addrow" data-a="${act}" ${data}><span class="plus">${svg('plus', 18)}</span>${esc(label)}</button>`;
-    const cutRows = set => store.custom.cuts[set].map(x => mine(set + ':' + C.CUSTOM_FIELD[set] + ':' + x.id, x.name, x.desc || t('customTag'), '', 'editCut', `data-set="${set}" data-id="${x.id}"`)).join('');
+    const cutRows = set => store.custom.cuts[set].map(x => mine(set + ':' + C.CUSTOM_FIELD[set] + ':' + x.id, x.name, x.desc || t('customTag'), '', 'editCut', `data-set="${set}" data-id="${x.id}"`, cutIcon(set, C.CUSTOM_FIELD[set], x.id))).join('');
     // Premier niveau : le métier (Coiffure / Ongles / Cils), chaque métier a son propre catalogue
     // Un salon n'a qu'une activité : celle choisie à l'inscription ; les autres sont visibles mais inactives
     const trade = (store.account && store.account.trade) || 'hair';
@@ -268,7 +271,7 @@ const SCREENS = {
       ? `<section class="card"><span class="label">${t('myColors')}</span>${store.custom.colors.length ? store.custom.colors.map(x => mine('ucolor:' + x.id, x.name, C.colorCode(x.tone, x.reflet) + ' · ' + lab(C.TONES.find(y => y.id === x.tone)), colorSw(x), 'editColor', `data-id="${x.id}"`)).join('') : `<p class="muted" style="margin:0">${t('myColorsEmpty')}</p>`}${add(t('addMyColor'), 'newColor')}</section>
       <section class="card"><span class="label">${t('tones')}</span>${C.TONES.map(x => tog('tone:' + x.id, x.id + ' · ' + lab(x), swatchCss(x.id))).join('')}</section>
       <section class="card"><span class="label">${t('reflets')}</span>${C.REFLETS.map(x => tog('reflet:' + x.id, '.' + x.id + ' · ' + lab(x), swatchCss(7, x.id))).join('')}</section>`
-      : `<section class="card"><span class="label">${t(sub === 'f' ? 'cutsF' : 'cutsH')}</span>${C.CUT_SETS[sub].find(x => x.key === C.CUSTOM_FIELD[sub]).options.filter(o => !o.custom).map(o => tog(sub + ':' + C.CUSTOM_FIELD[sub] + ':' + o.id, lab(o))).join('')}${cutRows(sub)}${add(t('addMyCut'), 'newCut', `data-set="${sub}"`)}</section>`;
+      : `<section class="card"><span class="label">${t(sub === 'f' ? 'cutsF' : 'cutsH')}</span>${C.CUT_SETS[sub].find(x => x.key === C.CUSTOM_FIELD[sub]).options.filter(o => !o.custom).map(o => tog(sub + ':' + C.CUSTOM_FIELD[sub] + ':' + o.id, lab(o), '', cutIcon(sub, C.CUSTOM_FIELD[sub], o.id))).join('')}${cutRows(sub)}${add(t('addMyCut'), 'newCut', `data-set="${sub}"`)}</section>`;
     return `<div class="screen">${top(t('catalogTitle'), { noBack: true, big: true })}<main class="main">${seg}${seg2}<p class="muted" style="margin:0">${t({ color: 'catSubColor', f: 'catSubF', h: 'catSubH' }[sub])}</p>
       ${content}
       </main>${tabbar('catalog')}</div>`;
@@ -306,7 +309,7 @@ function sheetHtml() {
   } else if (sheet.kind === 'cut') {
     const f = C.CUT_SETS[S.cutSet].find(x => x.key === sheet.k); const cut = S.cuts[sheet.i]; title = t('f_' + f.key); sub = t('sub_' + f.key);
     const opts = f.options.filter(o => !hidden(S.cutSet + ':' + f.key + ':' + o.id) || o.id === sheet.sel);
-    body = opts.map(o => { const okk = C.isAllowed(f, o, cut); return `<button class="opt" data-a="pick" data-v="${o.id}" aria-pressed="${sheet.sel === o.id}" ${okk ? '' : 'disabled'}><span class="grow"><strong>${esc(lab(o))}</strong><span class="muted">${esc(okk ? des(o) : t('incompatible'))}</span></span><span class="radio ${sheet.sel === o.id ? 'on' : ''}"></span></button>`; }).join('');
+    body = opts.map(o => { const okk = C.isAllowed(f, o, cut); return `<button class="opt" data-a="pick" data-v="${o.id}" aria-pressed="${sheet.sel === o.id}" ${okk ? '' : 'disabled'}>${cutIcon(S.cutSet, f.key, o.id)}<span class="grow"><strong>${esc(lab(o))}</strong><span class="muted">${esc(okk ? des(o) : t('incompatible'))}</span></span><span class="radio ${sheet.sel === o.id ? 'on' : ''}"></span></button>`; }).join('');
   } else if (sheet.kind === 'customColor') {
     title = sheet.id ? t('editColor') : t('newColor');
     const tiles = (f, list) => `<div class="minigrid">${list.map(x => `<button class="mtile" data-a="ccPick" data-f="${f}" data-v="${x.id}" aria-pressed="${sheet[f] === x.id}"><i style="background:${f === 'tone' ? swatchCss(x.id) : swatchCss(sheet.tone || 7, x.id)}"></i><span>${f === 'tone' ? x.id : '.' + x.id}</span></button>`).join('')}</div>`;

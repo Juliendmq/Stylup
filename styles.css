@@ -265,3 +265,6 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .subseg { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); }
 .subseg button { flex: 1 1 auto; min-width: 0; padding: 9px 8px; border-radius: 9px; border: 0; background: none; color: var(--muted); font-size: .875rem; line-height: 1.2; text-align: center; transition: background-color .15s ease, color .15s ease; }
 .subseg button[aria-selected=true] { background: var(--panel); color: var(--text); font-weight: 600; box-shadow: 0 1px 0 rgba(255,255,255,.04), 0 2px 8px rgba(0,0,0,.25); }
+.cut-ic { width: 40px; height: 40px; flex: none; }
+.opt .cut-ic { margin-right: 2px; }
+.opt:disabled .cut-ic { opacity: .5; }
