@@ -268,3 +268,4 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .cut-ic { width: 40px; height: 40px; flex: none; }
 .opt .cut-ic { margin-right: 2px; }
 .opt:disabled .cut-ic { opacity: .5; }
+.stack { display: flex; flex-direction: column; gap: 16px; }

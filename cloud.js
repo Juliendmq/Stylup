@@ -1,7 +1,7 @@
 // Couche de données Supabase : comptes (inscription avec code e-mail, connexion, mot de passe oublié),
 // profil, salon, catalogue personnalisé, éléments masqués, sessions clientes et leurs photos.
 // L'app garde une copie locale (cache) ; si Supabase est injoignable, elle reste en mode local.
-import { SUPABASE } from './config.js?v=202611161836';
+import { SUPABASE } from './config.js?v=202611161837';
 
 const BUCKET = 'session-photos';
 let sb = null;

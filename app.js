@@ -1,9 +1,9 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611161836';
-import * as C from './catalog.js?v=202611161836';
-import * as Cloud from './cloud.js?v=202611161836';
-import { RENDER } from './config.js?v=202611161836';
-import * as E from './engine.js?v=202611161836';
+import { STR } from './i18n.js?v=202611161837';
+import * as C from './catalog.js?v=202611161837';
+import * as Cloud from './cloud.js?v=202611161837';
+import { RENDER } from './config.js?v=202611161837';
+import * as E from './engine.js?v=202611161837';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -153,7 +153,7 @@ const SCREENS = {
   client: () => `<div class="screen">${top(t('clientTitle'))}<main class="main">
     <label class="field"><span class="label">${t('firstName')}</span><input class="input" data-in="first" value="${esc(S.first)}" placeholder="${t('firstNamePh')}" autocomplete="off"></label>
     <hr class="sep section">
-    ${[['f', 'female'], ['h', 'male'], ['n', 'nonbinary']].map(([g, k]) => `<button class="row ${S.gender === g ? 'on' : ''}" data-a="gender" data-g="${g}"><span class="grow">${t(k)}</span><span class="radio ${S.gender === g ? 'on' : ''}"></span></button>`).join('')}
+    <div class="field" role="radiogroup" aria-label="${t('genderLabel')}"><span class="label">${t('genderLabel')}<span class="req" aria-hidden="true"> *</span></span><div class="stack">${[['f', 'female'], ['h', 'male'], ['n', 'nonbinary']].map(([g, k]) => `<button class="row ${S.gender === g ? 'on' : ''}" data-a="gender" data-g="${g}" role="radio" aria-checked="${S.gender === g}"><span class="grow">${t(k)}</span><span class="radio ${S.gender === g ? 'on' : ''}"></span></button>`).join('')}</div></div>
     </main>${foot(pbtn(t('cont'), 'toServices', !!S.gender))}</div>`,
 
   services: () => `<div class="screen">${top(t('servicesTitle'))}<main class="main">
