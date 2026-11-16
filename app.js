@@ -1,9 +1,9 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611161825';
-import * as C from './catalog.js?v=202611161825';
-import * as Cloud from './cloud.js?v=202611161825';
-import { RENDER } from './config.js?v=202611161825';
-import * as E from './engine.js?v=202611161825';
+import { STR } from './i18n.js?v=202611161831';
+import * as C from './catalog.js?v=202611161831';
+import * as Cloud from './cloud.js?v=202611161831';
+import { RENDER } from './config.js?v=202611161831';
+import * as E from './engine.js?v=202611161831';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -37,7 +37,7 @@ const svg = (k, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" 
 const swatchCss = (tone, reflet = 0) => C.lockGradient(C.colorOf(tone, reflet));
 // Pictogrammes des coupes (forme femme, style homme) ; les coupes maison prennent le pictogramme Coiffure
 const CUT_ICONS = { f: ['carre-droit', 'carre-plongeant', 'lob', 'degrade', 'shag', 'wolf', 'pixie'], h: ['crop', 'crew', 'side', 'quiff', 'buzz', 'pomp', 'slick'] };
-const cutIcon = (set, field, id) => field !== C.CUSTOM_FIELD[set] ? '' : `<img class="cut-ic" src="${CUT_ICONS[set].includes(id) ? `assets/cuts/${set}-${id}.svg` : 'assets/trade-hair.svg'}" alt="" width="40" height="40">`;
+const cutIcon = (set, field, id) => field !== C.CUSTOM_FIELD[set] ? '' : `<img class="cut-ic" src="${CUT_ICONS[set].includes(id) ? `assets/cuts/${set}-${id}.svg?v=2` : 'assets/trade-hair.svg'}" alt="" width="40" height="40">`;
 const colorSw = c => swatchCss(c.tone, c.reflet ?? 0);
 const uid = () => 'u' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
 const fmtDate = ts => new Intl.DateTimeFormat(store.lang, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(ts));
