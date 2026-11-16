@@ -1,5 +1,5 @@
 // Moteur d'image : chargement des photos, masque cheveux, recoloration, rendus de coupe.
-import { colorOf } from './catalog.js?v=202611161837';
+import { colorOf } from './catalog.js?v=202611161845';
 
 export const DEMO = {
   photo: 'assets/demo-original.jpg',
@@ -10,6 +10,8 @@ export const DEMO = {
     pixie: { photo: 'assets/demo-pixie.jpg', mask: 'assets/demo-pixie-mask.png' },
   },
 };
+// Client de démonstration (homme), photo du parcours coupe homme du fichier Figma
+export const DEMO_MAN = { photo: 'assets/demo-man.jpg', mask: 'assets/demo-man-mask.png', cuts: {} };
 
 const loadImg = src => new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error('image ' + src)); i.src = src; });
 

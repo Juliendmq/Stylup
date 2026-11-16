@@ -1,9 +1,9 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611161837';
-import * as C from './catalog.js?v=202611161837';
-import * as Cloud from './cloud.js?v=202611161837';
-import { RENDER } from './config.js?v=202611161837';
-import * as E from './engine.js?v=202611161837';
+import { STR } from './i18n.js?v=202611161845';
+import * as C from './catalog.js?v=202611161845';
+import * as Cloud from './cloud.js?v=202611161845';
+import { RENDER } from './config.js?v=202611161845';
+import * as E from './engine.js?v=202611161845';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -174,7 +174,7 @@ const SCREENS = {
       <div class="photo frame ${cls}">${S.photoUrl ? `<img src="${S.photoUrl}" alt="">` : `<div class="empty">${t('faceSub')}</div>`}</div>
       ${msg ? `<p class="status ${cls}" style="margin:0">${msg}</p>` : ''}
       <label class="link" style="cursor:pointer">${t('gallery')}<input type="file" accept="image/*" data-file="photo"></label>
-      <button class="link" data-a="demo">${t('demoClient')}</button></section></main>${foot(pbtn(t('cont'), 'afterCapture', !!S.photo && st !== 'busy'))}</div>`;
+      <button class="link" data-a="demo">${t(S.gender === 'h' ? 'demoClientMan' : 'demoClient')}</button></section></main>${foot(pbtn(t('cont'), 'afterCapture', !!S.photo && st !== 'busy'))}</div>`;
   },
 
   brush: () => `<div class="screen">${top(t('brushTitle'))}<main class="main"><p class="muted" style="margin:0">${t('brushWhy')} ${t('brushSub')}</p>
@@ -390,7 +390,7 @@ async function computeRenders() {
       catch (e) { if (renderAbort.signal.aborted) throw e; aiError = e.code || 'error'; cutPending = true; }
       if (ai) return { url: base.toDataURL('image/jpeg', 0.9), canvas: base, cut, color, ai, mock: mode === 'mock' };
     } else if (cut) {
-      const preset = S.demo && S.cutSet === 'f' && E.DEMO.cuts[cut.shape];
+      const preset = S.demo && S.gender !== 'h' && S.cutSet === 'f' && E.DEMO.cuts[cut.shape];
       if (preset) { base = await E.canvasFromUrl(preset.photo); mask = await E.maskFromUrl(preset.mask, base.width, base.height); demoUsed = true; }
       else cutPending = true;
     }
@@ -586,7 +586,7 @@ const A = {
   toConsent: () => go('consent'),
   consent: d => { S.consent[d.k] = !S.consent[d.k]; render(); },
   toCapture: () => go('capture'),
-  demo: async () => { const p = await E.canvasFromUrl(E.DEMO.photo); const m = await E.maskFromUrl(E.DEMO.mask, p.width, p.height); await setPhoto(p, true, m); },
+  demo: async () => { const D = S.gender === 'h' ? E.DEMO_MAN : E.DEMO; const p = await E.canvasFromUrl(D.photo); const m = await E.maskFromUrl(D.mask, p.width, p.height); await setPhoto(p, true, m); },
   afterCapture: async () => {
     if (S.svc.color && !S.mask) {
       const prev = S.framing; S.framing = 'busy'; render(); const m = await E.autoHairMask(S.photo).catch(() => null); S.framing = prev;
