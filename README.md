@@ -48,9 +48,11 @@ L'app envoie la photo et les choix à une fonction Supabase (`supabase/functions
 Nano Banana 2 (Gemini 3.1 Flash Image). La clé Gemini reste dans les secrets Supabase, jamais dans l'app.
 
 1. Créer un projet sur supabase.com.
-2. Créer une clé dans Google AI Studio, puis dans Supabase › Edge Functions › Secrets : `GEMINI_API_KEY`
-   (facultatif : `DAILY_LIMIT`, 200 par défaut).
-3. Exécuter `supabase/migrations/20261115_render_usage.sql` dans Supabase › SQL Editor (plafond quotidien).
+2. Créer une clé dans Google AI Studio, puis dans Supabase › Edge Functions › Secrets : `GEMINI_API_KEY`.
+3. Garde-fous (facultatifs, valeurs par défaut entre parenthèses) : `DAILY_LIMIT` (20/jour tous comptes),
+   `MONTHLY_LIMIT` (300/mois), `USER_DAILY_LIMIT` (10/jour par compte), `USER_MINUTE_LIMIT` (3/min par compte),
+   `RENDER_ENABLED=false` pour tout couper. Les plafonds sont vérifiés en base avant chaque appel à Gemini
+   (`supabase/migrations/20261116_render_quotas.sql`) ; un rendu raté ne compte pas ; seul un compte connecté peut lancer un rendu.
 4. Déployer la fonction : `supabase functions deploy render` (ou via le connecteur Supabase de Claude).
 5. Renseigner `config.js` : l'adresse `https://<projet>.supabase.co/functions/v1/render` et la clé publique `anon`.
 

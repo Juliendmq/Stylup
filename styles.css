@@ -269,3 +269,4 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .opt .cut-ic { margin-right: 2px; }
 .opt:disabled .cut-ic { opacity: .5; }
 .stack { display: flex; flex-direction: column; gap: 16px; }
+.ai-left { margin: 0 16px; font-size: .8125rem; }

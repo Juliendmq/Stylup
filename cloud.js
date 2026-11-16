@@ -1,7 +1,7 @@
 // Couche de données Supabase : comptes (inscription avec code e-mail, connexion, mot de passe oublié),
 // profil, salon, catalogue personnalisé, éléments masqués, sessions clientes et leurs photos.
 // L'app garde une copie locale (cache) ; si Supabase est injoignable, elle reste en mode local.
-import { SUPABASE } from './config.js?v=202611161845';
+import { SUPABASE } from './config.js?v=202611161902';
 
 const BUCKET = 'session-photos';
 let sb = null;
@@ -31,6 +31,13 @@ export async function currentUser() {
   if (!sb) return null;
   const { data } = await sb.auth.getSession();
   return data.session ? data.session.user : null;
+}
+
+// Jeton du compte connecté (pour les appels payants : rendu IA)
+export async function accessToken() {
+  if (!sb) return null;
+  const { data } = await sb.auth.getSession();
+  return data.session ? data.session.access_token : null;
 }
 
 // ---------- comptes ----------

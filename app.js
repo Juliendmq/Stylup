@@ -1,9 +1,9 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611161845';
-import * as C from './catalog.js?v=202611161845';
-import * as Cloud from './cloud.js?v=202611161845';
-import { RENDER } from './config.js?v=202611161845';
-import * as E from './engine.js?v=202611161845';
+import { STR } from './i18n.js?v=202611161902';
+import * as C from './catalog.js?v=202611161902';
+import * as Cloud from './cloud.js?v=202611161902';
+import { RENDER } from './config.js?v=202611161902';
+import * as E from './engine.js?v=202611161902';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -224,11 +224,12 @@ const SCREENS = {
     const R = S.renders; const cur = S.tab; const v = cur === 0 ? null : R[cur - 1];
     const tabs = [t('original'), ...R.map((r, i) => tabLabel(i))];
     const img = cur === 0 ? S.photoUrl : v.url;
-    const notes = v ? (v.aiError ? `<div class="overlay-note"><strong>${t('renderError')}</strong><span class="muted">${t(v.aiError === 'daily_limit' ? 'renderLimit' : 'renderErrorSub')}${v.color ? ' ' + t('cutPendingColor') : ''}</span></div>` : v.cutPending ? `<div class="overlay-note"><strong>${t('cutPending')}</strong><span class="muted">${t('cutPendingSub')}${v.color ? ' ' + t('cutPendingColor') : ''}</span></div>` : v.mock ? `<div class="overlay-note soft"><span class="muted">${t('mockNote')}</span></div>` : v.demoUsed ? `<div class="overlay-note soft"><span class="muted">${t('demoExample')}</span></div>` : '') : '';
+    const notes = v ? (v.aiError ? `<div class="overlay-note"><strong>${t('renderError')}</strong><span class="muted">${t({ daily_limit: 'renderLimit', monthly_limit: 'renderLimitMonth', user_limit: 'renderLimitUser', minute_limit: 'renderLimitMinute', disabled: 'renderDisabled', auth_required: 'renderAuth' }[v.aiError] || 'renderErrorSub')}${v.color ? ' ' + t('cutPendingColor') : ''}</span></div>` : v.cutPending ? `<div class="overlay-note"><strong>${t('cutPending')}</strong><span class="muted">${t('cutPendingSub')}${v.color ? ' ' + t('cutPendingColor') : ''}</span></div>` : v.mock ? `<div class="overlay-note soft"><span class="muted">${t('mockNote')}</span></div>` : v.demoUsed ? `<div class="overlay-note soft"><span class="muted">${t('demoExample')}</span></div>` : '') : '';
     const info = v ? infoOf(v) : { title: t('notSet'), sub: '-', dot: '' };
     return `<div class="screen">${top(t('resultTitle'))}<main class="main flush"><div class="photo" style="aspect-ratio:390/445">${`<img src="${img}" alt="">`}${v ? `<span class="badge">${t('simulation')}</span>` : ''}${notes}</div>
       <div class="rtabs" role="tablist">${tabs.map((l, i) => `<button role="tab" data-a="rtab" data-i="${i}" aria-selected="${i === cur}"><i></i>${esc(l)}</button>`).join('')}</div>
-      <div class="info"><span class="dot" style="${info.dot}">${info.icon || ''}</span><span style="flex:1;display:flex;flex-direction:column;gap:2px"><strong>${esc(info.title)}</strong><span class="muted">${esc(info.sub)}</span></span></div></main>
+      <div class="info"><span class="dot" style="${info.dot}">${info.icon || ''}</span><span style="flex:1;display:flex;flex-direction:column;gap:2px"><strong>${esc(info.title)}</strong><span class="muted">${esc(info.sub)}</span></span></div>
+      ${renderMode() === 'live' && quotaLeft() !== null ? `<p class="muted ai-left">${t('aiLeft', { n: quotaLeft() })}</p>` : ''}</main>
       <footer class="foot row2"><button class="btn ghost" data-a="editChoices">${t('edit')}</button>${pbtn(t('chooseRender'), 'chooseRender', cur !== 0)}</footer></div>`;
   },
 
@@ -350,10 +351,24 @@ function nextChoice() { return S.svc.cut ? 'cut' : 'color'; }
 
 // Rendu génératif (coupe, et couleur quand il y a aussi une coupe) via la fonction Supabase → Nano Banana 2
 // Le service n'est utilisé que s'il confirme que la clé Gemini est en place (vérifié une fois au démarrage)
-let renderReady = false;
-if (RENDER.enabled && RENDER.url) fetch(RENDER.url, { headers: { apikey: RENDER.anonKey, Authorization: `Bearer ${RENDER.anonKey}` } })
-  .then(r => r.json()).then(j => { renderReady = !!(j && j.configured); }).catch(() => {});
-const renderMode = () => /[?&]render=mock\b/.test(location.search) ? 'mock' : renderReady ? 'live' : null;
+// Garde-fous côté app (le serveur fait foi : il réserve chaque rendu sous plafonds avant d'appeler Gemini) :
+//  - rendu IA seulement pour un compte connecté (jeton du compte, jamais la clé publique seule)
+//  - aucun appel quand le quota du jour est épuisé
+//  - un même rendu (même photo + mêmes choix) n'est jamais payé deux fois dans la session
+let renderReady = false, aiQuota = null;
+const renderCache = new Map();
+async function refreshRenderStatus() {
+  if (!RENDER.enabled || !RENDER.url) return;
+  const tok = Cloud.online ? await Cloud.accessToken() : null;
+  try {
+    const j = await fetch(RENDER.url, { headers: { apikey: RENDER.anonKey, Authorization: `Bearer ${tok || RENDER.anonKey}` } }).then(r => r.json());
+    renderReady = !!(j && j.configured); if (j && j.quota) aiQuota = j.quota;
+  } catch (e) { renderReady = false; }
+}
+refreshRenderStatus();
+const loggedInCloud = () => Cloud.online && !!(store.account && store.account.salonId);
+const renderMode = () => /[?&]render=mock\b/.test(location.search) ? 'mock' : renderReady && loggedInCloud() ? 'live' : null;
+const quotaLeft = () => aiQuota ? Math.min(aiQuota.user_left, aiQuota.global_left) : null;
 let renderAbort = null;
 function renderPayload(cut, color) {
   const en = o => C.label(o, 'en'), enDesc = o => C.describe(o, 'en');
@@ -371,11 +386,17 @@ async function aiRender(cut, color, signal) {
     const out = document.createElement('canvas'); out.width = c.width; out.height = c.height; const g = out.getContext('2d');
     g.filter = 'contrast(1.04) saturate(1.08)'; g.drawImage(c, 0, 0); return out;
   }
-  const r = await fetch(RENDER.url, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', apikey: RENDER.anonKey, Authorization: `Bearer ${RENDER.anonKey}` }, body: JSON.stringify(body) });
+  const key = S.photoKey + '|' + JSON.stringify(renderPayload(cut, color));
+  if (renderCache.has(key)) return renderCache.get(key);
+  const fail = code => { const e = new Error(code); e.code = code; throw e; };
+  if (quotaLeft() === 0) fail(aiQuota.global_left === 0 ? 'daily_limit' : 'user_limit');
+  const tok = await Cloud.accessToken(); if (!tok) fail('auth_required');
+  const r = await fetch(RENDER.url, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', apikey: RENDER.anonKey, Authorization: `Bearer ${tok}` }, body: JSON.stringify(body) });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok || !j.image) { const e = new Error(j.error || 'http_' + r.status); e.code = j.error || (r.status === 429 ? 'daily_limit' : 'error'); throw e; }
+  if (j.quota) aiQuota = j.quota;
+  if (!r.ok || !j.image) fail(j.error || (r.status === 429 ? 'daily_limit' : 'error'));
   url = j.image;
-  return E.canvasFromUrl(url);
+  const out = await E.canvasFromUrl(url); renderCache.set(key, out); return out;
 }
 async function computeRenders() {
   const n = Math.max(S.svc.cut ? S.cuts.length : 0, S.svc.color ? S.colors.length : 0);
@@ -401,7 +422,7 @@ async function computeRenders() {
 }
 
 async function setPhoto(canvas, isDemo, mask) {
-  S.photo = canvas; S.photoUrl = canvas.toDataURL('image/jpeg', 0.9); S.demo = isDemo; S.mask = mask || null; S.renders = null;
+  S.photo = canvas; S.photoUrl = canvas.toDataURL('image/jpeg', 0.9); S.photoKey = uid(); S.demo = isDemo; S.mask = mask || null; S.renders = null;
   if (isDemo) { S.framing = 'ok'; render(); return; }
   S.framing = 'busy'; render();
   const r = await E.checkFraming(canvas).catch(() => null);
@@ -452,6 +473,7 @@ function applyCloud(d) {
 }
 // Après connexion : charge le compte puis va à l'accueil (ou à « Votre établissement » si pas encore de salon)
 async function afterSignIn() {
+  refreshRenderStatus();
   let d; try { d = await Cloud.loadAll(); } catch (e) { return toast(t('errNetwork')); }
   if (!d) return;
   applyCloud(d);
@@ -717,7 +739,7 @@ Cloud.init().then(async ok => {
   const user = await Cloud.currentUser();
   if (!user) { if (store.loggedIn) { store.loggedIn = false; store.account = null; save(); stack = []; route = { name: 'splash' }; render(); } return; }
   try {
-    const d = await Cloud.loadAll(); applyCloud(d);
+    const d = await Cloud.loadAll(); applyCloud(d); refreshRenderStatus();
     if (!d.salon) { F = { first: d.profile.first_name || '', salon: '', city: '', trade: null }; stack = [{ name: 'splash' }]; route = { name: 'salonSetup' }; return render(); }
     if (!store.loggedIn) return enterApp();
     if (!S) render();
