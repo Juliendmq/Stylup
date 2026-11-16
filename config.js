@@ -10,7 +10,11 @@ export const SUPABASE = {
 // Au démarrage, l'app demande à la fonction si la clé Gemini est en place ; sinon elle garde le rendu local.
 // Pour tester l'interface sans service : ajouter ?render=mock à l'adresse de l'app.
 export const RENDER = {
-  enabled: true,
+  enabled: false, // POC : pas de génération IA, parcours scriptés (voir POC ci-dessous)
   url: SUPABASE.url + '/functions/v1/render',
   anonKey: SUPABASE.anonKey,
 };
+
+// POC : les sessions suivent strictement les parcours de la maquette Figma (client de démonstration femme ou homme,
+// choix limités aux exemples, rendus = images Figma). Passer à false pour revenir au parcours ouvert.
+export const POC = { scripted: true };

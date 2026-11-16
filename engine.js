@@ -1,5 +1,5 @@
 // Moteur d'image : chargement des photos, masque cheveux, recoloration, rendus de coupe.
-import { colorOf } from './catalog.js?v=202611161902';
+import { colorOf } from './catalog.js?v=202611161935';
 
 export const DEMO = {
   photo: 'assets/demo-original.jpg',
@@ -12,6 +12,29 @@ export const DEMO = {
 };
 // Client de démonstration (homme), photo du parcours coupe homme du fichier Figma
 export const DEMO_MAN = { photo: 'assets/demo-man.jpg', mask: 'assets/demo-man-mask.png', cuts: {} };
+
+// Parcours POC scriptés, repris à l'identique des maquettes Figma (page « Version stabilisée ») :
+//  - femme, couleur (10.x / 11.x) : Couleur 01 = 7.4 blond cuivré, Couleur 02 = blond platine cendré (10.1)
+//  - femme, coupe (12.x / 13.x) : Coupe 01 = carré plongeant mi-long frange rideau, Coupe 02 = pixie court sans frange
+//  - homme, coupe (14.x / 15.x) : Coupe 01 = crop texturé dessus court dégradé mi-hauteur, Coupe 02 = buzz cut dégradé à blanc
+// Seuls ces choix sont proposés, et chaque rendu est l'image correspondante de la maquette.
+export const SCRIPT = {
+  f: {
+    demo: DEMO,
+    options: { length: ['ml', 'tc'], shape: ['carre-plongeant', 'pixie'], fringe: ['rideau', 'sans'] },
+    renders: DEMO.cuts,
+    colors: [
+      { tone: 7, reflet: 4, photo: 'assets/demo-color-74.jpg' },
+      { tone: 10, reflet: 1, photo: 'assets/demo-color-102.jpg' },
+    ],
+  },
+  h: {
+    demo: DEMO_MAN,
+    options: { sides: ['mid', 'skin'], top: ['c', 'tc'], style: ['crop', 'buzz'] },
+    renders: { crop: { photo: 'assets/demo-man-crop.jpg' }, buzz: { photo: 'assets/demo-man-buzz.jpg' } },
+    colors: [],
+  },
+};
 
 const loadImg = src => new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error('image ' + src)); i.src = src; });
 

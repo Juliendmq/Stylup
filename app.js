@@ -1,9 +1,9 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611161902';
-import * as C from './catalog.js?v=202611161902';
-import * as Cloud from './cloud.js?v=202611161902';
-import { RENDER } from './config.js?v=202611161902';
-import * as E from './engine.js?v=202611161902';
+import { STR } from './i18n.js?v=202611161935';
+import * as C from './catalog.js?v=202611161935';
+import * as Cloud from './cloud.js?v=202611161935';
+import { RENDER, POC } from './config.js?v=202611161935';
+import * as E from './engine.js?v=202611161935';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -157,7 +157,7 @@ const SCREENS = {
     </main>${foot(pbtn(t('cont'), 'toServices', !!S.gender))}</div>`,
 
   services: () => `<div class="screen">${top(t('servicesTitle'))}<main class="main">
-    ${[['cut', 'svcCut'], ['color', 'svcColor']].map(([k, l]) => `<button class="row ${S.svc[k] ? 'on' : ''}" data-a="svc" data-k="${k}" role="switch" aria-checked="${S.svc[k]}"><span class="grow">${t(l)}</span><span class="toggle ${S.svc[k] ? 'on' : ''}"></span></button>`).join('')}
+    ${[['cut', 'svcCut'], ['color', 'svcColor']].filter(([k]) => !(SCRIPTED && k === 'color' && S.gender === 'h')).map(([k, l]) => `<button class="row ${S.svc[k] ? 'on' : ''}" data-a="svc" data-k="${k}" role="switch" aria-checked="${S.svc[k]}"><span class="grow">${t(l)}</span><span class="toggle ${S.svc[k] ? 'on' : ''}"></span></button>`).join('')}
     </main>${foot(pbtn(t('cont'), 'toConsent', S.svc.cut || S.svc.color))}</div>`,
 
   consent: () => `<div class="screen">${top(t('consentTitle'))}<main class="main">
@@ -170,11 +170,11 @@ const SCREENS = {
     const st = S.framing; const cls = st === 'ok' ? 'ok' : st === 'bad' ? 'bad' : '';
     const msg = st === 'ok' ? t('photoValid') : st === 'bad' ? t('photoInvalid') : st === 'busy' ? t('analysing') : st === 'ready' ? t('photoReady') : '';
     return `<div class="screen">${top(t('captureTitle'))}<main class="main"><section class="card"><div><h3>${t('face')}</h3><p class="muted" style="margin:2px 0 0">${t('faceSub')}</p></div>
-      <label class="chipbtn">${S.photo ? t('retake') : t('takePhoto')}<input type="file" accept="image/*" capture="environment" data-file="photo"></label>
+      ${SCRIPTED ? `<button class="chipbtn" data-a="demo">${S.photo ? t('retake') : t('takePhoto')}</button>` : `<label class="chipbtn">${S.photo ? t('retake') : t('takePhoto')}<input type="file" accept="image/*" capture="environment" data-file="photo"></label>`}
       <div class="photo frame ${cls}">${S.photoUrl ? `<img src="${S.photoUrl}" alt="">` : `<div class="empty">${t('faceSub')}</div>`}</div>
       ${msg ? `<p class="status ${cls}" style="margin:0">${msg}</p>` : ''}
-      <label class="link" style="cursor:pointer">${t('gallery')}<input type="file" accept="image/*" data-file="photo"></label>
-      <button class="link" data-a="demo">${t(S.gender === 'h' ? 'demoClientMan' : 'demoClient')}</button></section></main>${foot(pbtn(t('cont'), 'afterCapture', !!S.photo && st !== 'busy'))}</div>`;
+      ${SCRIPTED ? '' : `<label class="link" style="cursor:pointer">${t('gallery')}<input type="file" accept="image/*" data-file="photo"></label>
+      <button class="link" data-a="demo">${t(S.gender === 'h' ? 'demoClientMan' : 'demoClient')}</button>`}</section></main>${foot(pbtn(t('cont'), 'afterCapture', !!S.photo && st !== 'busy'))}</div>`;
   },
 
   brush: () => `<div class="screen">${top(t('brushTitle'))}<main class="main"><p class="muted" style="margin:0">${t('brushWhy')} ${t('brushSub')}</p>
@@ -233,14 +233,12 @@ const SCREENS = {
       <footer class="foot row2"><button class="btn ghost" data-a="editChoices">${t('edit')}</button>${pbtn(t('chooseRender'), 'chooseRender', cur !== 0)}</footer></div>`;
   },
 
+  // Rendu retenu (maquette Figma 11.04 / 11.05) : la photo simulée, le téléphone du client, partage puis fin de session
   kept: () => {
-    const v = S.renders[S.chosen]; const info = infoOf(v);
-    return `<div class="screen">${top(t('keptTitle'))}<main class="main"><div class="photo" style="aspect-ratio:390/445;border-radius:14px"><img src="${v.url}" alt=""><span class="badge">${t('simulation')}</span></div>
-      <section class="card"><h3>${esc(info.title)}</h3><span class="muted">${esc(info.sub)}</span></section><p class="muted" style="margin:0">${t('disclaimer')}</p>
-      <section class="card"><h3>${t('afterTitle')}</h3><label class="chipbtn">${t('addAfter')}<input type="file" accept="image/*" capture="environment" data-file="after"></label>
-      ${S.after ? `<div class="pair"><figure><img src="${E.thumb(v.canvas, 360)}" alt=""><figcaption class="muted">${t('simulationCap')}</figcaption></figure><figure><img src="${S.after}" alt=""><figcaption class="muted">${t('realCap')}</figcaption></figure></div>
-      <span class="label">${t('rateQ')}</span><div class="stars">${[1, 2, 3, 4, 5].map(n => `<button data-a="rate" data-n="${n}" aria-pressed="${S.rating === n}">${n}</button>`).join('')}</div>` : ''}</section>
-      </main>${foot(pbtn(t('finish'), 'finish'), { noAbandon: true })}</div>`;
+    const v = S.renders[S.chosen];
+    return `<div class="screen">${top(t('keptTitle'))}<main class="main flush"><div class="photo" style="aspect-ratio:390/445"><img src="${v.url}" alt=""><span class="badge">${t('simulation')}</span></div>
+      <div class="kept-form"><label class="field" for="f-phone"><span class="label">${t('clientPhone')}</span><input class="input" id="f-phone" data-in="phone" type="tel" inputmode="tel" autocomplete="off" value="${esc(S.phone || '')}" placeholder="${esc(t('phonePh'))}"></label></div></main>
+      <footer class="foot">${pbtn(t('shareClient'), 'shareClient')}<button class="btn ghost" data-a="finish">${t('endSession')}</button></footer></div>`;
   },
 
   session: () => {
@@ -303,14 +301,14 @@ function sheetHtml() {
   let body = '', title = '', sub = '', btn = pbtn(t('validate'), 'sheetOk', sheet.sel != null);
   if (sheet.kind === 'tone') {
     title = t('toneSheet'); sub = t('toneSheetSub');
-    const mine = store.custom.colors.filter(x => !hidden('ucolor:' + x.id) || x.id === sheet.sel);
-    body = (mine.length ? `<span class="label">${t('yourColorsSheet')}</span><div class="grid3">${mine.map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${colorSw(x)}"></i><span class="tname">${esc(x.name)}</span><span class="tcode">${C.colorCode(x.tone, x.reflet)}</span></button>`).join('')}</div><span class="label" style="margin-top:8px">${t('tonesSheet')}</span>` : '') + `<div class="grid3">${C.TONES.filter(x => !hidden('tone:' + x.id) || x.id === sheet.sel).map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${swatchCss(x.id)}"></i>${esc(lab(x))}</button>`).join('')}</div>`;
+    const mine = SCRIPTED ? [] : store.custom.colors.filter(x => !hidden('ucolor:' + x.id) || x.id === sheet.sel);
+    body = (mine.length ? `<span class="label">${t('yourColorsSheet')}</span><div class="grid3">${mine.map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${colorSw(x)}"></i><span class="tname">${esc(x.name)}</span><span class="tcode">${C.colorCode(x.tone, x.reflet)}</span></button>`).join('')}</div><span class="label" style="margin-top:8px">${t('tonesSheet')}</span>` : '') + `<div class="grid3">${C.TONES.filter(x => (!hidden('tone:' + x.id) && scriptTone(x.id)) || x.id === sheet.sel).map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${swatchCss(x.id)}"></i>${esc(lab(x))}</button>`).join('')}</div>`;
   } else if (sheet.kind === 'reflet') {
     const tone = S.colors[sheet.i].tone; title = t('refletSheet'); sub = t('refletSheetSub', { tone: tone + ' · ' + lab(C.TONES.find(x => x.id === tone)) });
-    body = `<div class="grid3">${C.REFLETS.filter(x => !hidden('reflet:' + x.id) || x.id === sheet.sel).map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${swatchCss(tone, x.id)}"></i>${esc(lab(x))}</button>`).join('')}</div>`;
+    body = `<div class="grid3">${C.REFLETS.filter(x => (!hidden('reflet:' + x.id) && scriptReflet(tone, x.id)) || x.id === sheet.sel).map(x => `<button class="tile" data-a="pick" data-v="${x.id}" aria-pressed="${sheet.sel === x.id}"><i style="background:${swatchCss(tone, x.id)}"></i>${esc(lab(x))}</button>`).join('')}</div>`;
   } else if (sheet.kind === 'cut') {
     const f = C.CUT_SETS[S.cutSet].find(x => x.key === sheet.k); const cut = S.cuts[sheet.i]; title = t('f_' + f.key); sub = t('sub_' + f.key);
-    const opts = f.options.filter(o => !hidden(S.cutSet + ':' + f.key + ':' + o.id) || o.id === sheet.sel);
+    const opts = f.options.filter(o => (!hidden(S.cutSet + ':' + f.key + ':' + o.id) && !(SCRIPTED && o.custom) && scriptCut(f.key, o.id)) || o.id === sheet.sel);
     body = opts.map(o => { const okk = C.isAllowed(f, o, cut); return `<button class="opt" data-a="pick" data-v="${o.id}" aria-pressed="${sheet.sel === o.id}" ${okk ? '' : 'disabled'}>${cutIcon(S.cutSet, f.key, o.id)}<span class="grow"><strong>${esc(lab(o))}</strong><span class="muted">${esc(okk ? des(o) : t('incompatible'))}</span></span><span class="radio ${sheet.sel === o.id ? 'on' : ''}"></span></button>`; }).join('');
   } else if (sheet.kind === 'customColor') {
     title = sheet.id ? t('editColor') : t('newColor');
@@ -335,6 +333,12 @@ function sheetHtml() {
 
 // ---------- logique métier ----------
 const cutSetFor = g => g === 'h' ? 'h' : 'f';
+// Parcours POC scripté (maquettes Figma) : choix limités aux exemples, rendus = images de la maquette
+const SCRIPTED = !!(POC && POC.scripted);
+const script = () => E.SCRIPT[S.gender === 'h' ? 'h' : 'f'];
+const scriptCut = (key, id) => !SCRIPTED || !(script().options[key]) || script().options[key].includes(id);
+const scriptTone = id => !SCRIPTED || script().colors.some(c => c.tone === id);
+const scriptReflet = (tone, id) => !SCRIPTED || script().colors.some(c => c.tone === tone && c.reflet === id);
 const cutDone = cut => C.CUT_SETS[S.cutSet].every(f => !f.required || cut[f.key]);
 const opt = (cut, key) => { const f = C.CUT_SETS[S.cutSet].find(x => x.key === key); return f && cut[key] ? f.options.find(o => o.id === cut[key]) : null; };
 function cutTitle(cut) { if (S.cutSet === 'f') { const a = opt(cut, 'shape'), b = opt(cut, 'length'); return [a, b].filter(Boolean).map(lab).join(' · '); } const a = opt(cut, 'style'), b = opt(cut, 'top'); return [a, b].filter(Boolean).map(lab).join(' · '); }
@@ -404,6 +408,20 @@ async function computeRenders() {
   const one = async i => {
     const cut = S.svc.cut ? S.cuts[Math.min(i, S.cuts.length - 1)] : null;
     const color = S.svc.color ? S.colors[Math.min(i, S.colors.length - 1)] : null;
+    if (SCRIPTED && S.demo) {
+      // POC : rendus = images de la maquette Figma
+      const sc = script(); let base = S.photo, mask = S.mask, cutPending = false;
+      if (cut) {
+        const p = sc.renders[cut[C.CUSTOM_FIELD[S.cutSet]]];
+        if (p) { base = await E.canvasFromUrl(p.photo); mask = p.mask ? await E.maskFromUrl(p.mask, base.width, base.height) : null; } else cutPending = true;
+      }
+      if (color) {
+        const pc = !cut && sc.colors.find(c => c.tone === color.tone && c.reflet === (color.reflet ?? 0));
+        if (pc) base = await E.canvasFromUrl(pc.photo);
+        else if (mask) base = E.recolor(base, mask, color.tone, color.reflet ?? 0);
+      }
+      return { url: base.toDataURL('image/jpeg', 0.9), canvas: base, cut, color, cutPending };
+    }
     let base = S.photo, mask = S.mask, demoUsed = false, cutPending = false, ai = false, aiError = null;
     if (cut && mode) {
       // la coupe change le volume des cheveux : un seul rendu génératif fait coupe + couleur
@@ -607,8 +625,8 @@ const A = {
   svc: d => { S.svc[d.k] = !S.svc[d.k]; render(); },
   toConsent: () => go('consent'),
   consent: d => { S.consent[d.k] = !S.consent[d.k]; render(); },
-  toCapture: () => go('capture'),
-  demo: async () => { const D = S.gender === 'h' ? E.DEMO_MAN : E.DEMO; const p = await E.canvasFromUrl(D.photo); const m = await E.maskFromUrl(D.mask, p.width, p.height); await setPhoto(p, true, m); },
+  toCapture: () => { go('capture'); if (SCRIPTED && !S.photo) A.demo(); },
+  demo: async () => { const D = SCRIPTED ? script().demo : S.gender === 'h' ? E.DEMO_MAN : E.DEMO; const p = await E.canvasFromUrl(D.photo); const m = await E.maskFromUrl(D.mask, p.width, p.height); await setPhoto(p, true, m); },
   afterCapture: async () => {
     if (S.svc.color && !S.mask) {
       const prev = S.framing; S.framing = 'busy'; render(); const m = await E.autoHairMask(S.photo).catch(() => null); S.framing = prev;
@@ -656,6 +674,8 @@ const A = {
       const mine = typeof sheet.sel === 'string' && store.custom.colors.find(x => x.id === sheet.sel);
       if (mine) S.colors[sheet.i] = { custom: mine.id, name: mine.name, tone: mine.tone, reflet: mine.reflet ?? 0 };
       else { const prev = S.colors[sheet.i]; S.colors[sheet.i] = prev.custom ? { tone: sheet.sel } : Object.assign(prev, { tone: sheet.sel }); }
+      // POC : chaque hauteur de ton de la maquette va avec un seul reflet, choisi automatiquement
+      const sc = SCRIPTED && script().colors.find(c => c.tone === sheet.sel); if (sc) S.colors[sheet.i].reflet = sc.reflet;
     }
     else if (sheet.kind === 'reflet') { S.colors[sheet.i].reflet = sheet.sel; }
     else if (sheet.kind === 'cut') {
@@ -674,6 +694,19 @@ const A = {
   rtab: d => { S.tab = +d.i; render(); },
   editChoices: () => back(),
   chooseRender: () => { S.chosen = S.tab - 1; S.after = null; S.rating = null; go('kept'); },
+  // Partage au client : feuille de partage du téléphone (WhatsApp, SMS, AirDrop…) avec l'image ; sinon image enregistrée + SMS prérempli
+  shareClient: async () => {
+    const v = S.renders[S.chosen]; const text = t('shareText', { salon: (store.account && store.account.salon) || 'Stylup' });
+    const blob = await new Promise(r => v.canvas.toBlob(r, 'image/jpeg', 0.9));
+    const file = new File([blob], 'stylup-simulation.jpg', { type: 'image/jpeg' });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text, title: 'Stylup' }); S.shared = true; return toast(t('sharedOk')); }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'stylup-simulation.jpg'; document.body.appendChild(a); a.click(); a.remove();
+    const phone = (S.phone || '').replace(/[^\d+]/g, '');
+    if (phone) { const l = document.createElement('a'); l.href = `sms:${phone}${/iPhone|iPad|Macintosh/.test(navigator.userAgent) ? '&' : '?'}body=${encodeURIComponent(text)}`; l.rel = 'noopener'; document.body.appendChild(l); l.click(); l.remove(); }
+    S.shared = true; toast(t('sharedFallback'));
+  },
   rate: d => { S.rating = +d.n; render(); },
   finish: () => {
     const v = S.renders[S.chosen]; const info = infoOf(v);
@@ -704,7 +737,7 @@ function saveProfileField(inp) {
   clearTimeout(profileTimer[k]); profileTimer[k] = setTimeout(() => sync(() => k === 'first' ? Cloud.saveProfile({ first_name: v }) : Cloud.updateSalon(store.account.salonId, { [k === 'salon' ? 'name' : 'city']: v })), 700);
 }
 const profileTimer = {};
-$app.addEventListener('input', e => { if (e.target.dataset.set) return saveProfileField(e.target); if (e.target.dataset.sheet && sheet) { sheet[e.target.dataset.sheet] = e.target.value; const ok = $app.querySelector('.sheet [data-a=ccSave], .sheet [data-a=cuSave]'); if (ok) ok.disabled = !(sheet.name.trim() && (sheet.kind !== 'customColor' || sheet.tone)); return; } if (e.target.dataset.otp !== undefined) otpPaint(e.target); if (e.target.dataset.f) { const k = e.target.dataset.f; F[k] = e.target.value; const ready = READY[route.name], cta = ready && $app.querySelector('.foot .btn.primary'); if (cta) cta.disabled = !ready(); if (F.err && (F.err[k] || F.err.form)) { delete F.err[k]; delete F.err.form; e.target.classList.remove('invalid'); e.target.removeAttribute('aria-invalid'); e.target.closest('.field')?.querySelector('.err')?.remove(); $app.querySelector('p.err[role=alert]')?.remove(); } return; } const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'brushSize') route.size = +e.target.value; });
+$app.addEventListener('input', e => { if (e.target.dataset.set) return saveProfileField(e.target); if (e.target.dataset.sheet && sheet) { sheet[e.target.dataset.sheet] = e.target.value; const ok = $app.querySelector('.sheet [data-a=ccSave], .sheet [data-a=cuSave]'); if (ok) ok.disabled = !(sheet.name.trim() && (sheet.kind !== 'customColor' || sheet.tone)); return; } if (e.target.dataset.otp !== undefined) otpPaint(e.target); if (e.target.dataset.f) { const k = e.target.dataset.f; F[k] = e.target.value; const ready = READY[route.name], cta = ready && $app.querySelector('.foot .btn.primary'); if (cta) cta.disabled = !ready(); if (F.err && (F.err[k] || F.err.form)) { delete F.err[k]; delete F.err.form; e.target.classList.remove('invalid'); e.target.removeAttribute('aria-invalid'); e.target.closest('.field')?.querySelector('.err')?.remove(); $app.querySelector('p.err[role=alert]')?.remove(); } return; } const k = e.target.dataset.in; if (!k) return; if (k === 'first') S.first = e.target.value; else if (k === 'phone') S.phone = e.target.value; else if (k === 'brushSize') route.size = +e.target.value; });
 $app.addEventListener('focusin', e => { if (e.target.dataset.otp !== undefined) e.target.closest('.otp').classList.add('focus'); });
 $app.addEventListener('focusout', e => { if (e.target.dataset.otp !== undefined) e.target.closest('.otp').classList.remove('focus'); });
 $app.addEventListener('click', e => { if (e.target.dataset.otp !== undefined) otpDemoFill(e.target); });

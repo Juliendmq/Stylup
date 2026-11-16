@@ -270,3 +270,4 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .opt:disabled .cut-ic { opacity: .5; }
 .stack { display: flex; flex-direction: column; gap: 16px; }
 .ai-left { margin: 0 16px; font-size: .8125rem; }
+.kept-form { padding: 24px 16px 0; }
