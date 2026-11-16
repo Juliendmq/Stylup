@@ -1,9 +1,9 @@
 // Stylup — prototype coiffure. Parcours : accueil → client → prestation → accord → photo → (détourage) → coupe → couleur → aperçu → résultat → rendu retenu.
-import { STR } from './i18n.js?v=202611151425';
-import * as C from './catalog.js?v=202611151425';
-import * as Cloud from './cloud.js?v=202611151425';
-import { RENDER } from './config.js?v=202611151425';
-import * as E from './engine.js?v=202611151425';
+import { STR } from './i18n.js?v=202611161817';
+import * as C from './catalog.js?v=202611161817';
+import * as Cloud from './cloud.js?v=202611161817';
+import { RENDER } from './config.js?v=202611161817';
+import * as E from './engine.js?v=202611161817';
 
 const $app = document.getElementById('app');
 const KEY = 'stylup.proto.v1';
@@ -105,6 +105,7 @@ const SCREENS = {
     const left = Math.max(0, Math.ceil(((F.resendAt || 0) - Date.now()) / 1000));
     return `<div class="screen">${top(t(F.mode === 'recovery' ? 'forgotTitle' : 'verifyTitle'))}<main class="main"><div class="hero"><h2>${t('verifyHead')}</h2><p class="muted">${t('verifySub', { email: `<strong>${esc(F.email)}</strong>` })}</p></div>
     ${otpField()}
+    ${Cloud.online ? '' : `<p class="note">${t('offlineCode')}</p>`}
     <button class="link" data-a="resend" id="resendBtn" ${left ? 'disabled' : ''}>${left ? t('resendIn', { n: left }) : t('resend')}</button>
     </main>${authFoot(pbtn(t('confirmBtn'), 'verifyOk'))}</div>`;
   },
@@ -488,6 +489,7 @@ const A = {
     if (!passOk(F.pass)) errs.pass = t('errPass');
     if (!errs.email && store.account && store.account.verified && store.account.email.toLowerCase() === email.toLowerCase()) errs.email = t('errExists');
     if (Object.keys(errs).length) return fail(errs);
+    await Cloud.ensure();
     if (Cloud.online) {
       const r = await Cloud.signUp(email, F.pass, store.lang);
       if (r.error) return cloudErr(r.error, r.error === 'weak' ? 'pass' : 'email');
@@ -534,6 +536,7 @@ const A = {
     if (!EMAIL_RE.test(email)) errs.email = t('errEmail');
     if (!F.pass) errs.pass = t('errRequired');
     if (Object.keys(errs).length) return fail(errs);
+    await Cloud.ensure();
     if (Cloud.online) {
       const r = await Cloud.signIn(email, F.pass);
       if (r.error === 'unconfirmed') { await Cloud.resendCode(email, 'signup'); F = { email, code: '', mode: 'signup', resendAt: Date.now() + 60000 }; return go('verify'); }
@@ -549,6 +552,7 @@ const A = {
   toForgot: () => { F = { email: F.email || '' }; go('forgot'); },
   forgotOk: async () => {
     const email = (F.email || '').trim(); if (!EMAIL_RE.test(email)) return fail({ email: t('errEmail') });
+    await Cloud.ensure();
     if (Cloud.online) { const r = await Cloud.sendRecovery(email); if (r.error) return cloudErr(r.error); F = { email, code: '', mode: 'recovery', resendAt: Date.now() + 60000 }; return go('verify'); }
     F = { sentTo: email }; go('forgotSent');
   },

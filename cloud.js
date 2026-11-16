@@ -1,7 +1,7 @@
 // Couche de données Supabase : comptes (inscription avec code e-mail, connexion, mot de passe oublié),
 // profil, salon, catalogue personnalisé, éléments masqués, sessions clientes et leurs photos.
 // L'app garde une copie locale (cache) ; si Supabase est injoignable, elle reste en mode local.
-import { SUPABASE } from './config.js?v=202611151425';
+import { SUPABASE } from './config.js?v=202611161817';
 
 const BUCKET = 'session-photos';
 let sb = null;
@@ -9,6 +9,7 @@ export let online = false;
 
 // Démarrage : vérifie que Supabase répond, puis crée le client (session gardée sur l'appareil)
 export async function init() {
+  if (online) return true;
   if (!window.supabase || !SUPABASE.url) return false;
   try {
     const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 6000);
@@ -22,6 +23,9 @@ export async function init() {
   online = true;
   return true;
 }
+
+// Nouvel essai de connexion juste avant une action de compte (réseau revenu, démarrage trop lent…)
+export const ensure = () => init();
 
 export async function currentUser() {
   if (!sb) return null;
