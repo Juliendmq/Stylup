@@ -18,8 +18,8 @@ jobs:
         run: |
           case "$OUT" in assets/*.jpg) ;; *) echo "chemin refusé"; exit 1;; esac
           curl -fsSL "$URL" -o /tmp/in
-          convert /tmp/in -resize "${W}x" -quality 88 -strip "$OUT"
-          identify "$OUT"
+          pip install --quiet pillow
+          python3 -c "import os,sys; from PIL import Image; im=Image.open('/tmp/in').convert('RGB'); w=int(os.environ['W']); im=im.resize((w, round(im.height*w/im.width)), Image.LANCZOS); im.save(os.environ['OUT'], quality=88, optimize=True); print(im.size)"
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
