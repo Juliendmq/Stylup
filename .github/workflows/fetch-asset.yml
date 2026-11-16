@@ -1,0 +1,26 @@
+# Outil interne : récupère une image (ex. export Figma à lien temporaire), la convertit en JPG et l'ajoute au dépôt.
+name: Fetch asset
+on:
+  workflow_dispatch:
+    inputs:
+      url: { description: "Adresse de l'image", required: true }
+      path: { description: "Chemin dans le dépôt (ex. assets/demo-man.jpg)", required: true }
+      width: { description: "Largeur en px", required: false, default: "390" }
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Télécharger et convertir
+        env: { URL: "${{ inputs.url }}", OUT: "${{ inputs.path }}", W: "${{ inputs.width }}" }
+        run: |
+          case "$OUT" in assets/*.jpg) ;; *) echo "chemin refusé"; exit 1;; esac
+          curl -fsSL "$URL" -o /tmp/in
+          convert /tmp/in -resize "${W}x" -quality 88 -strip "$OUT"
+          identify "$OUT"
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${{ inputs.path }}"; git commit -m "Ajout de ${{ inputs.path }}" && git push
